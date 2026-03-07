@@ -1,35 +1,43 @@
-import express, { Application, NextFunction, Request, Response } from 'express';
-import cors from 'cors';
-import globalErrorHandler from './app/middlewares/globalErrorHandler';
-import notFound from './app/middlewares/notFound';
-import { config } from 'dotenv';
-import node_env from './config/index'
-import { uptime } from 'process';
-import { timeStamp } from 'console';
+import express, { Application, Request, Response } from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import { envVars } from "./app/config/env";
+
+
+import routes from "./app/routes";
+import { globalErrorHandlers } from "./app/middlewares/globalErrorHandler";
+import { notFound } from "./app/middlewares/notFound";
 
 const app: Application = express();
-app.use(cors({
-    origin: 'http://localhost:3000',
-    credentials: true
-}));
 
-//parser
+app.use(cookieParser());
+app.use(
+  cors({
+
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
+
+// body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
-app.get('/', (req: Request, res: Response) => {
-    res.send({
-        message: "Career server running..",
-        environment: config.node_env,
-        uptime: process.uptime().toFixed(2) + " Sec",
-        timeStamp: new Date().toISOString(),
-    })
+// health check
+app.get("/", (req: Request, res: Response) => {
+  res.send({
+    message: "Career server running..",
+    environment: envVars.NODE_ENV,
+    uptime: process.uptime().toFixed(2) + " Sec",
+    timeStamp: new Date().toISOString(),
+  });
 });
 
+// API routes
+app.use("/api/v1", routes);
 
-app.use(globalErrorHandler);
-
+// error handlers
+app.use(globalErrorHandlers);
 app.use(notFound);
 
 export default app;

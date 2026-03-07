@@ -1,18 +1,26 @@
-import { NextFunction, Request, Response } from "express"
-import httpStatus from "http-status"
+import { NextFunction, Request, Response } from "express";
+import { envVars } from "../config/env";
+import { AppError } from "../errorHelpers/app-error";
 
-const globalErrorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const globalErrorHandlers = (
+  err: any | AppError,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const statusCode = 500;
 
-    let statusCode = httpStatus.INTERNAL_SERVER_ERROR;
-    let success = false;
-    let message = err.message || "Something went wrong!";
-    let error = err;
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+    });
+  }
 
-    res.status(statusCode).json({
-        success,
-        message,
-        error
-    })
+  res.status(statusCode).json({
+    success: false,
+    message: err.message,
+    err,
+    stack: envVars.NODE_ENV === "development" ? err.stack : null,
+  });
 };
-
-export default globalErrorHandler;
