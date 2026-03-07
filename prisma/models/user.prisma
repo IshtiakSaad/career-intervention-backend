@@ -1,0 +1,32 @@
+model User {
+    id String @id @default(uuid())
+
+    email        String  @unique
+    name         String?
+    passwordHash String
+
+    needPasswordChange  Boolean @default(false)
+    role                Role    @default(MENTEE)
+    accountStatus       Status  @default(ACTIVE)
+    twoFactorEnabled    Boolean @default(false)
+    failedLoginAttempts Int     @default(0)
+
+    emailVerified DateTime?
+    phoneVerified DateTime?
+    phoneNumber   String?
+
+    profileImageUrl String?
+    timezone        String  @default("UTC")
+    gender          Gender
+
+    lastLoginAt DateTime?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    deletedAt   DateTime?
+
+    mentorProfile MentorProfile?
+    menteeProfile MenteeProfile?
+    adminProfile  Admin?
+
+    @@map("users")
+}

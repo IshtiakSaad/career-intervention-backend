@@ -1,0 +1,6 @@
+enum Status {
+    ACTIVE
+    INACTIVE
+    SUSPENDED
+    PENDING
+}
