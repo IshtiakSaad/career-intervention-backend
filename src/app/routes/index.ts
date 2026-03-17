@@ -10,6 +10,7 @@ import { PaymentRoutes } from "../modules/payment/payment.routes";
 import { FeedbackRoutes } from "../modules/feedback/feedback.routes";
 import { SpecialtyRoutes } from "../modules/specialty/specialty.routes";
 import { MentorSpecialtyRoutes } from "../modules/mentorSpecialty/mentorSpecialty.routes";
+import { AiRoutes } from "../modules/ai/ai.routes";
 
 const router = express.Router();
 
@@ -26,6 +27,7 @@ router.use("/payments", PaymentRoutes);                     // /api/v1/payments
 router.use("/feedbacks", FeedbackRoutes);                   // /api/v1/feedbacks
 router.use("/specialties", SpecialtyRoutes);               // /api/v1/specialties
 router.use("/mentor-specialties", MentorSpecialtyRoutes);   // /api/v1/mentor-specialties
+router.use("/ai", AiRoutes);                                // /api/v1/ai
 
 
 // Optional root route
