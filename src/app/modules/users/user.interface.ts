@@ -1,12 +1,12 @@
 // src/app/modules/users/user.interface.ts
-import { Role, Gender } from "../../../generated/prisma/client";
+import { Role, Gender } from "../../../generated/prisma";
 
 /**
  * Payload for self-registration (MENTEE only)
  */
 export interface IUserRegisterPayload {
   email: string;
-  passwordHash: string;
+  password: string;
   name?: string;
   phoneNumber?: string;
   profileImageUrl?: string;

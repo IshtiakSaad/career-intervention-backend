@@ -1,0 +1,36 @@
+model Session {
+    id String @id @default(uuid())
+
+    mentorId String
+    mentor   MentorProfile @relation(fields: [mentorId], references: [id])
+
+    menteeId String
+    mentee   MenteeProfile @relation(fields: [menteeId], references: [id])
+
+    availabilitySlotId String @unique
+    availabilitySlot   AvailabilitySlot @relation(fields: [availabilitySlotId], references: [id])
+
+    serviceId String
+    service   ServiceOffering @relation(fields: [serviceId], references: [id])
+
+    sessionType String?
+
+    // Snapshots for historical integrity
+    startTime       DateTime
+    durationMinutes Int
+    priceAtBooking  Decimal  @db.Decimal(10, 2)
+
+    status SessionStatus @default(PENDING)
+
+    videoLink String?
+    notes     String?
+
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
+
+    feedback Feedback?
+    payment  Payment?
+
+    @@map("sessions")
+}

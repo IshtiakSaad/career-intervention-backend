@@ -1,0 +1,20 @@
+model Feedback {
+    id String @id @default(uuid())
+
+    sessionId String  @unique
+    session   Session @relation(fields: [sessionId], references: [id])
+
+    reviewerId String
+    reviewer   User   @relation("Reviewer", fields: [reviewerId], references: [id])
+
+    revieweeId String
+    reviewee   User   @relation("Reviewee", fields: [revieweeId], references: [id])
+
+    rating   Int
+    comments String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("feedbacks")
+}

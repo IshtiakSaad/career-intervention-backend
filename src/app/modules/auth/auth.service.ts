@@ -1,4 +1,4 @@
-import { Status } from "../../../generated/prisma/client";
+import { Status } from "../../../generated/prisma";
 import { envVars } from "../../config/env";
 import { JwtHelpers } from "../../utils/jwtHelpers";
 import { comparePassword } from "../../utils/hashPassword";
@@ -7,7 +7,7 @@ import prisma from "../../utils/prisma";
 import { ILoginPayload, ILoginResponse } from "./auth.interface";
 
 const loginUser = async (payload: ILoginPayload): Promise<ILoginResponse> => {
-  const { email, passwordHash } = payload;
+  const { email, password } = payload;
 
   // 1. Check if user exists
   const user = await prisma.user.findUnique({
@@ -25,7 +25,7 @@ const loginUser = async (payload: ILoginPayload): Promise<ILoginResponse> => {
 
 
   // 3. Verify password
-  const isPasswordMatched = await comparePassword(passwordHash, user.passwordHash);
+  const isPasswordMatched = await comparePassword(password, user.passwordHash);
 
   if (!isPasswordMatched) {
     throw new Error("Invalid password");

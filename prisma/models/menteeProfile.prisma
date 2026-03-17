@@ -10,5 +10,7 @@ model MenteeProfile {
     user  User   @relation(fields: [email], references: [email])
     email String @unique
 
+    sessions Session[]
+
     @@map("mentees")
 }

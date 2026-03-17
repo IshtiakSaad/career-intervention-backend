@@ -1,4 +1,4 @@
-import { User as PrismaUser, Role as PrismaRole } from '../../../generated/prisma/client';
+import { User as PrismaUser, Role as PrismaRole } from '../../../generated/prisma';
 import { hashPassword } from '../../utils/hashPassword';
 import prisma from '../../utils/prisma';
 import { IUserCreateByAdminPayload, IUserUpdatePayload } from './user.interface';
@@ -11,7 +11,7 @@ const createUser = async (
   payload: IUserCreateByAdminPayload,
 ): Promise<PrismaUser> => {
   try {
-    const hashedPassword = await hashPassword(payload.passwordHash!);
+    const hashedPassword = await hashPassword(payload.password!);
 
     const result = await prisma.$transaction(async (tx) => {
       // Destructure profile-specific fields from metadata
@@ -20,7 +20,8 @@ const createUser = async (
         bio, 
         experience, 
         designation, 
-        currentWorkingPlace, 
+        currentWorkingPlace,
+        password, 
         ...userData 
       } = payload;
 
@@ -74,7 +75,7 @@ import { paginationHelper } from '../../helpers/paginationHelper';
 import { IGenericResponse } from '../../interfaces/common';
 import { IPaginationOptions } from '../../interfaces/pagination';
 
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma';
 import { userSearchableFields } from './user.constant';
 
 /**

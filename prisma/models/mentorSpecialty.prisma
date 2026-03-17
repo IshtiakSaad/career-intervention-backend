@@ -1,0 +1,10 @@
+model MentorSpecialty {
+    mentorId String
+    mentor   MentorProfile @relation(fields: [mentorId], references: [id])
+
+    specialtyId String
+    specialty   Specialty @relation(fields: [specialtyId], references: [id])
+
+    @@id([mentorId, specialtyId])
+    @@map("mentor_specialties")
+}

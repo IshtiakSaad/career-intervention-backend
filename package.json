@@ -11,9 +11,8 @@
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.2",
     "bcryptjs": "^3.0.3",
-    "cookie-parser": "^1.4.7",
     "cloudinary": "^2.9.0",
-
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^5.1.0",
@@ -28,6 +27,7 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.0",
     "@types/pg": "^8.18.0",
     "prisma": "^7.4.2",

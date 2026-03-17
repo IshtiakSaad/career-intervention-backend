@@ -28,5 +28,8 @@ model User {
     menteeProfile MenteeProfile?
     adminProfile  Admin?
 
+    reviewedFeedbacks Feedback[] @relation("Reviewer")
+    revieweeFeedbacks Feedback[] @relation("Reviewee")
+
     @@map("users")
 }

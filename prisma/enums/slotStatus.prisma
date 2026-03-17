@@ -1,0 +1,5 @@
+enum SlotStatus {
+    AVAILABLE
+    BOOKED
+    BLOCKED
+}

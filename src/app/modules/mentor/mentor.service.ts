@@ -1,7 +1,68 @@
+import { Prisma } from "../../../generated/prisma";
+import { paginationHelper } from "../../helpers/paginationHelper";
+import { IPaginationOptions } from "../../interfaces/pagination";
+import { mentorSearchableFields } from "./mentor.constant";
 import prisma from "../../utils/prisma";
 
-const getAllMentors = async () => {
-  return await prisma.mentorProfile.findMany({
+const getAllMentors = async (filters: any, options: IPaginationOptions) => {
+  const { searchTerm, specialties, ...filterData } = filters;
+  const { limit, page, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
+
+  const andConditions: Prisma.MentorProfileWhereInput[] = [];
+
+  if (searchTerm) {
+    andConditions.push({
+      OR: [
+        ...mentorSearchableFields.map(field => ({
+          [field]: {
+            contains: searchTerm,
+            mode: 'insensitive'
+          }
+        })),
+        {
+          user: {
+            name: {
+              contains: searchTerm,
+              mode: 'insensitive'
+            }
+          }
+        }
+      ]
+    });
+  }
+
+  if (specialties) {
+    const specialtyArray = Array.isArray(specialties) ? specialties : [specialties];
+    andConditions.push({
+      mentorSpecialties: {
+        some: {
+          specialty: {
+            name: {
+              in: specialtyArray
+            }
+          }
+        }
+      }
+    });
+  }
+
+  if (Object.keys(filterData).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterData).map(key => ({
+        [key]: {
+          equals: (filterData as any)[key]
+        }
+      }))
+    });
+  }
+
+  const whereConditions: Prisma.MentorProfileWhereInput = andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const result = await prisma.mentorProfile.findMany({
+    where: whereConditions,
+    skip,
+    take: limit,
+    orderBy: { [sortBy]: sortOrder },
     include: {
       user: {
         select: {
@@ -11,8 +72,20 @@ const getAllMentors = async () => {
           gender: true,
         },
       },
+      mentorSpecialties: {
+        include: {
+          specialty: true
+        }
+      }
     },
   });
+
+  const total = await prisma.mentorProfile.count({ where: whereConditions });
+
+  return {
+    meta: { page, limit, total },
+    data: result
+  };
 };
 
 const getSingleMentor = async (id: string) => {

@@ -1,0 +1,21 @@
+model AvailabilitySlot {
+    id String @id @default(uuid())
+
+    mentorId String
+    mentor   MentorProfile @relation(fields: [mentorId], references: [id])
+
+    startTime DateTime
+    endTime   DateTime
+
+    status SlotStatus @default(AVAILABLE)
+
+    description String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    session Session?
+
+    @@unique([mentorId, startTime, endTime])
+    @@map("availability_slots")
+}

@@ -4,7 +4,7 @@ import { z } from "zod";
 const createUserValidationSchema = z.object({
   body: z.object({
     email: z.string().email({ message: "Invalid email address" }),
-    passwordHash: z.string().min(6, { message: "Password must be at least 6 characters" }),
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
     name: z.string().optional(),
     phoneNumber: z.string().optional(),
     profileImageUrl: z.string().url().optional(),
@@ -17,7 +17,7 @@ const createUserValidationSchema = z.object({
 const createUserByAdminValidationSchema = z.object({
   body: z.object({
     email: z.string().email({ message: "Invalid email address" }),
-    passwordHash: z.string().min(6, { message: "Password must be at least 6 characters" }),
+    password: z.string().min(6, { message: "Password must be at least 6 characters" }),
     name: z.string().optional(),
     phoneNumber: z.string().optional(),
     profileImageUrl: z.string().url().optional(),

@@ -1,0 +1,8 @@
+enum SessionStatus {
+    PENDING
+    CONFIRMED
+    ONGOING
+    COMPLETED
+    CANCELLED
+    REJECTED
+}

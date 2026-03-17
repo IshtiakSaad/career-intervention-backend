@@ -1,0 +1,20 @@
+model Payment {
+    id String @id @default(uuid())
+
+    sessionId String  @unique
+    session   Session @relation(fields: [sessionId], references: [id])
+
+    transactionId String? @unique // Gateway transaction ID
+    amount        Decimal @db.Decimal(10, 2)
+    currency      String  @default("USD")
+
+    status PaymentStatus @default(PENDING)
+
+    gatewayMetadata Json? // Raw metadata from provider (Stripe/SSLCommerz etc)
+
+    webhookProcessedAt DateTime?
+    createdAt          DateTime  @default(now())
+    updatedAt          DateTime  @updatedAt
+
+    @@map("payments")
+}

@@ -20,8 +20,12 @@ model MentorProfile {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    user  User   @relation(fields: [email], references: [email])
-    email String @unique
+    user              User               @relation(fields: [email], references: [email])
+    email             String             @unique
+    availabilitySlots AvailabilitySlot[]
+    serviceOfferings  ServiceOffering[]
+    sessions          Session[]
+    mentorSpecialties MentorSpecialty[]
 
     @@map("mentors")
 }
