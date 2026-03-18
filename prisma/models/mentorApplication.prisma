@@ -1,0 +1,25 @@
+model MentorApplication {
+    id String @id @default(uuid())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    bioDraft       String?
+    expertiseAreas String[]
+
+    status ApplicationStatus @default(DRAFT)
+
+    reviewedById String?
+    reviewedBy   Admin?  @relation(fields: [reviewedById], references: [id])
+
+    rejectionReason String?
+    description     String?
+
+    reviewedAt DateTime?
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    documents Document[]
+
+    @@map("mentor_applications")
+}

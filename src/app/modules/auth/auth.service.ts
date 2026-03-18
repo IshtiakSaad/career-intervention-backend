@@ -12,6 +12,7 @@ const loginUser = async (payload: ILoginPayload): Promise<ILoginResponse> => {
   // 1. Check if user exists
   const user = await prisma.user.findUnique({
     where: { email, deletedAt: null },
+    include: { userRoles: true }
   });
 
   if (!user) {
@@ -54,15 +55,22 @@ const loginUser = async (payload: ILoginPayload): Promise<ILoginResponse> => {
     },
   });
 
-  // 4. Generate Tokens
+  // 5. Extract Roles Array
+  const roles = user.userRoles.map(ur => ur.role);
+
+  if (roles.length === 0) {
+    throw new Error('User has no assigned roles. Please contact admin.');
+  }
+
+  // 6. Generate Tokens
   const accessToken = JwtHelpers.generateToken(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, roles },
     envVars.JWT_ACCESS_SECRET,
     envVars.JWT_ACCESS_EXPIRES_IN
   );
 
   const refreshToken = JwtHelpers.generateToken(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, roles },
     envVars.JWT_REFRESH_SECRET,
     envVars.JWT_REFRESH_EXPIRES_IN
   );

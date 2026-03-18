@@ -1,0 +1,18 @@
+model UserRole {
+    id String @id @default(uuid())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    role Role
+
+    grantedById String?
+    grantedBy   Admin?  @relation(fields: [grantedById], references: [id])
+
+    description  String?
+    
+    grantedAt DateTime  @default(now())
+    revokedAt DateTime?
+
+    @@map("user_roles")
+}

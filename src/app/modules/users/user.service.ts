@@ -22,6 +22,7 @@ const createUser = async (
         designation, 
         currentWorkingPlace,
         password, 
+        role,
         ...userData 
       } = payload;
 
@@ -34,6 +35,16 @@ const createUser = async (
       });
 
       // 2. Create the corresponding profile based on role
+      const userRoleStr = payload.role as PrismaRole; // Safely assert
+
+      // Generate the base UserRole
+      await tx.userRole.create({
+        data: {
+          userId: newUser.id,
+          role: userRoleStr
+        }
+      });
+
       if (payload.role === PrismaRole.MENTEE) {
         await tx.menteeProfile.create({
           data: {
@@ -217,7 +228,14 @@ const deleteUser = async (id: string): Promise<PrismaUser> => {
 const getUsersByRole = async (role: PrismaRole): Promise<PrismaUser[]> => {
   try {
     return await prisma.user.findMany({
-      where: { role, deletedAt: null },
+      where: { 
+        deletedAt: null,
+        userRoles: {
+          some: {
+            role: role
+          }
+        }
+      },
       include: {
         menteeProfile: true,
         mentorProfile: true,

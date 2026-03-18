@@ -1,5 +1,5 @@
 // src/app/modules/users/user.interface.ts
-import { Role, Gender } from "../../../generated/prisma";
+import { Gender, Role } from "../../../generated/prisma";
 
 /**
  * Payload for self-registration (MENTEE only)
@@ -18,7 +18,7 @@ export interface IUserRegisterPayload {
  * Payload for admin creating users (MENTOR or ADMIN)
  */
 export interface IUserCreateByAdminPayload extends IUserRegisterPayload {
-  role: Role; // ADMIN or MENTOR or MENTEE
+  role: string | Role; // e.g. MENTOR / MENTEE / ADMIN
   bio?: string; // For Mentors
   experience?: number; // For Mentors
   designation?: string; // For Mentors
@@ -48,7 +48,7 @@ export interface IUserResponse {
   phoneNumber?: string | null;
   profileImageUrl?: string | null;
   gender: Gender;
-  role: Role;
+  role: string | Role | string[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -10,6 +10,7 @@ import { PaymentRoutes } from "../modules/payment/payment.routes";
 import { FeedbackRoutes } from "../modules/feedback/feedback.routes";
 import { SpecialtyRoutes } from "../modules/specialty/specialty.routes";
 import { MentorSpecialtyRoutes } from "../modules/mentorSpecialty/mentorSpecialty.routes";
+import { UserRoleRoutes } from "../modules/userRole/userRole.routes";
 import { AiRoutes } from "../modules/ai/ai.routes";
 
 const router = express.Router();
@@ -25,8 +26,9 @@ router.use("/availability-slots", AvailabilitySlotRoutes);  // /api/v1/availabil
 router.use("/sessions", SessionRoutes);                     // /api/v1/sessions
 router.use("/payments", PaymentRoutes);                     // /api/v1/payments
 router.use("/feedbacks", FeedbackRoutes);                   // /api/v1/feedbacks
-router.use("/specialties", SpecialtyRoutes);               // /api/v1/specialties
+router.use("/specialties", SpecialtyRoutes);                // /api/v1/specialties
 router.use("/mentor-specialties", MentorSpecialtyRoutes);   // /api/v1/mentor-specialties
+router.use("/user-roles", UserRoleRoutes);                  // /api/v1/user-roles
 router.use("/ai", AiRoutes);                                // /api/v1/ai
 
 

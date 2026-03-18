@@ -30,7 +30,7 @@ const bookSession = catchAsync(async (req: Request, res: Response) => {
 
 const getMySessions = catchAsync(async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const result = await SessionService.getMySessions(user.id, user.role);
+  const result = await SessionService.getMySessions(user.id, user.roles || []);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

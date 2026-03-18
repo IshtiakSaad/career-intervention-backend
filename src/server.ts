@@ -49,34 +49,3 @@ const startServer = async () => {
 }
 
 startServer();
-
-
-/*
-    GRACEFULL SHUTDOWN of slipped out error
-    Unhandled Rejection Error. 
-    Uncaught Rejection Error. 
-    Signal Termination Error.
-*/
-
-process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Rejection detected:", err);
-  if (server) server.close(() => process.exit(1));
-  process.exit(1);
-});
-
-process.on("uncaughtException", (err) => {
-  console.error("Uncaught Exception detected:", err);
-  if (server) server.close(() => process.exit(1));
-  process.exit(1);
-});
-
-process.on("SIGTERM", () => {
-  console.error("SIGTERM Recieved. Server Shutting down.");
-
-  if (server) {
-    server.close(() => {
-      process.exit(1);
-    });
-  }
-  process.exit(1);
-});

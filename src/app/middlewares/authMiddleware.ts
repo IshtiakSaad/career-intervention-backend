@@ -46,10 +46,13 @@ export const authMiddleware = (...roles: string[]) => {
       }
 
       // 5. Check role-based authorization
-      if (roles.length && !roles.includes(verifiedUser.role)) {
-        return res
-          .status(httpStatus.FORBIDDEN)
-          .json({ success: false, message: "Forbidden: Insufficient permissions" });
+      if (roles.length > 0) {
+        const hasPermission = verifiedUser.roles?.some((role: string) => roles.includes(role));
+        if (!hasPermission) {
+          return res
+            .status(httpStatus.FORBIDDEN)
+            .json({ success: false, message: "Forbidden: Insufficient permissions" });
+        }
       }
 
       next();

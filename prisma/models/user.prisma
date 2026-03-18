@@ -6,7 +6,6 @@ model User {
     passwordHash String
 
     needPasswordChange  Boolean @default(false)
-    role                Role    @default(MENTEE)
     accountStatus       Status  @default(ACTIVE)
     twoFactorEnabled    Boolean @default(false)
     failedLoginAttempts Int     @default(0)
@@ -27,6 +26,10 @@ model User {
     mentorProfile MentorProfile?
     menteeProfile MenteeProfile?
     adminProfile  Admin?
+
+    userRoles          UserRole[]
+    documents          Document[]
+    mentorApplications MentorApplication[]
 
     reviewedFeedbacks Feedback[] @relation("Reviewer")
     revieweeFeedbacks Feedback[] @relation("Reviewee")

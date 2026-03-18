@@ -1,0 +1,6 @@
+enum DocumentType {
+    NID
+    RESUME
+    CERTIFICATE
+    OTHER
+}

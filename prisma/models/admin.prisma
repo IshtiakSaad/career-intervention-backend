@@ -10,5 +10,9 @@ model Admin {
     user  User   @relation(fields: [email], references: [email])
     email String @unique
 
+    grantedRoles         UserRole[]
+    verifiedDocuments    Document[]
+    reviewedApplications MentorApplication[]
+
     @@map("admins")
 }

@@ -1,0 +1,5 @@
+enum DocumentStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}

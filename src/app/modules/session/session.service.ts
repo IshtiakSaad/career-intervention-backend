@@ -73,15 +73,29 @@ const bookSession = async (
   });
 };
 
-const getMySessions = async (userId: string, role: string) => {
+const getMySessions = async (userId: string, roles: string[]) => {
   const whereConditions: any = { deletedAt: null };
 
-  if (role === 'MENTOR') {
-      const mentor = await prisma.mentorProfile.findUnique({ where: { email: (await prisma.user.findUnique({where:{id:userId}}))?.email } });
-      if(mentor) whereConditions.mentorId = mentor.id;
-  } else if (role === 'MENTEE') {
-      const mentee = await prisma.menteeProfile.findUnique({ where: { email: (await prisma.user.findUnique({where:{id:userId}}))?.email } });
-      if(mentee) whereConditions.menteeId = mentee.id;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { mentorProfile: true, menteeProfile: true }
+  });
+
+  const orConditions: any[] = [];
+
+  if (roles.includes('MENTOR') && user?.mentorProfile) {
+      orConditions.push({ mentorId: user.mentorProfile.id });
+  } 
+  
+  if (roles.includes('MENTEE') && user?.menteeProfile) {
+      orConditions.push({ menteeId: user.menteeProfile.id });
+  }
+
+  if (orConditions.length > 0) {
+    whereConditions.OR = orConditions;
+  } else if (!roles.includes('ADMIN')) {
+    // If not admin and no matching profiles found, return empty
+    return [];
   }
 
   const result = await prisma.session.findMany({
