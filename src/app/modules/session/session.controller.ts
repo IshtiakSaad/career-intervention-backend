@@ -52,8 +52,20 @@ const updateSession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deleteSession = catchAsync(async (req: Request, res: Response) => {
+  const result = await SessionService.deleteSession(req.params.id as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Session successfully deleted",
+    data: result
+  });
+});
+
 export const SessionController = {
   bookSession,
   getMySessions,
-  updateSession
+  updateSession,
+  deleteSession
 };

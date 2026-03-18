@@ -17,6 +17,10 @@ interface EnvConfig {
   CLOUDINARY_API_KEY: string;
   CLOUDINARY_API_SECRET: string;
   OPENROUTER_API_KEY: string;
+  SMTP_HOST?: string;
+  SMTP_PORT?: string;
+  SMTP_USER?: string;
+  SMTP_PASS?: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -58,6 +62,10 @@ const loadEnvVariables = (): EnvConfig => {
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY as string,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET as string,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY as string,
+    SMTP_HOST: process.env.SMTP_HOST as string,
+    SMTP_PORT: process.env.SMTP_PORT as string,
+    SMTP_USER: process.env.SMTP_USER as string,
+    SMTP_PASS: process.env.SMTP_PASS as string,
   };
 };
 

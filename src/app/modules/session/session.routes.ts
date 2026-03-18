@@ -26,4 +26,10 @@ router.patch(
   SessionController.updateSession
 );
 
+router.delete(
+  '/:id',
+  authMiddleware('ADMIN'),
+  SessionController.deleteSession
+);
+
 export const SessionRoutes = router;

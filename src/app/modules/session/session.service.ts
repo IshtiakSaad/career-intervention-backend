@@ -157,8 +157,24 @@ const updateSessionStatus = async (
   return result;
 };
 
+const deleteSession = async (id: string): Promise<Session> => {
+  const session = await prisma.session.findUnique({ where: { id } });
+
+  if (!session) {
+    throw new AppError(httpStatus.NOT_FOUND, "Session not found");
+  }
+
+  const result = await prisma.session.update({
+    where: { id },
+    data: { deletedAt: new Date(), status: SessionStatus.CANCELLED }
+  });
+
+  return result;
+};
+
 export const SessionService = {
   bookSession,
   getMySessions,
-  updateSessionStatus
+  updateSessionStatus,
+  deleteSession
 };

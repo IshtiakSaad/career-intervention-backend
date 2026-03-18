@@ -44,7 +44,7 @@ const getAllServiceOfferings = async (filters: any) => {
 };
 
 const getSingleServiceOffering = async (id: string): Promise<ServiceOffering | null> => {
-  return await prisma.serviceOffering.findUnique({
+  return await prisma.serviceOffering.findFirst({
     where: { id, deletedAt: null }
   });
 };

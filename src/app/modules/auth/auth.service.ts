@@ -18,18 +18,41 @@ const loginUser = async (payload: ILoginPayload): Promise<ILoginResponse> => {
     throw new Error("User not found");
   }
 
-  // 2. Check if account is active
+  // 2. Security Check: Suspended Status or Max Retries
   if (user.accountStatus === Status.SUSPENDED) {
-    throw new Error("Account is suspended");
+    throw new Error('Account is suspended. Please contact admin.');
   }
 
+  if (user.failedLoginAttempts >= 5) {
+    // Automatically block the account after 5 failed attempts
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { accountStatus: Status.SUSPENDED },
+    });
+    
+    throw new Error('Account is locked due to too many failed login attempts.');
+  }
 
   // 3. Verify password
   const isPasswordMatched = await comparePassword(password, user.passwordHash);
 
   if (!isPasswordMatched) {
-    throw new Error("Invalid password");
+    // Increment failed login attempt
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: user.failedLoginAttempts + 1 },
+    });
+    throw new Error('Invalid credentials');
   }
+
+  // 4. Successful Login: Reset failed attempts & Update last login
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      failedLoginAttempts: 0,
+      lastLoginAt: new Date(),
+    },
+  });
 
   // 4. Generate Tokens
   const accessToken = JwtHelpers.generateToken(
