@@ -26,6 +26,11 @@ model User {
     mentorProfile MentorProfile?
     menteeProfile MenteeProfile?
     adminProfile  Admin?
+    securityInfo  SecurityInfo?
+
+    authSessions        AuthSession[]
+    auditLogsPerformed  AuditLog[]
+    passwordResetTokens PasswordResetToken[]
 
     userRoles          UserRole[]
     documents          Document[]

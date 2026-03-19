@@ -1,0 +1,7 @@
+enum RevocationReason {
+    LOGOUT
+    ROTATED
+    REUSE_DETECTED
+    ADMIN_REVOKED
+    SEC_PASSWORD_CHANGE
+}

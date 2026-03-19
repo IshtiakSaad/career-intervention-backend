@@ -14,5 +14,6 @@ model UserRole {
     grantedAt DateTime  @default(now())
     revokedAt DateTime?
 
+    @@unique([userId, role])
     @@map("user_roles")
 }

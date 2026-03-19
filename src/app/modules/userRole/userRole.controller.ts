@@ -19,9 +19,10 @@ const grantRole = catchAsync(async (req: Request, res: Response) => {
 });
 
 const revokeRole = catchAsync(async (req: Request, res: Response) => {
+  const adminId = (req as any).user.id;
   const { userId, role } = req.body;
 
-  const result = await UserRoleService.revokeRole(userId, role);
+  const result = await UserRoleService.revokeRole(adminId, userId, role);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

@@ -1,7 +1,8 @@
-import { UserRole, Role } from "../../../generated/prisma";
+import { UserRole, Role, AuditAction, AuditEventType } from "../../../generated/prisma";
 import prisma from "../../utils/prisma";
 import { AppError } from "../../errorHelpers/app-error";
 import httpStatus from "http-status";
+import AuditService from "../audit/audit.service";
 
 /**
  * Grant a new role to a user.
@@ -47,23 +48,39 @@ const grantRole = async (
     throw new AppError(httpStatus.BAD_REQUEST, `User already has the active role: ${role}`);
   }
 
-  // 4. Create the role
-  return await prisma.userRole.create({
-    data: {
-      userId,
-      role,
-      grantedById: admin.id,
-      description,
-    },
+  // 4. Create the role with Audit Log in transaction
+  return await prisma.$transaction(async (tx) => {
+    const newRole = await tx.userRole.create({
+      data: {
+        userId,
+        role,
+        grantedById: admin.id,
+        description,
+      },
+    });
+
+    await AuditService.log({
+      actorId: adminId,
+      eventType: AuditEventType.ROLE_CHANGE,
+      action: AuditAction.GRANT,
+      entityType: "UserRole",
+      entityId: newRole.id,
+      stateAfter: newRole,
+      reason: description
+    }, tx);
+
+    return newRole;
   });
 };
 
 /**
  * Revoke an existing role from a user.
+ * @param adminId - The ID of the admin performing the revocation.
  * @param userId - The ID of the user.
  * @param role - The Role enum to revoke.
  */
 const revokeRole = async (
+  adminId: string,
   userId: string,
   role: Role,
 ): Promise<UserRole> => {
@@ -83,10 +100,24 @@ const revokeRole = async (
     );
   }
 
-  // 2. Mark as revoked
-  return await prisma.userRole.update({
-    where: { id: activeRole.id },
-    data: { revokedAt: new Date() },
+  // 2. Mark as revoked with Audit Log in transaction
+  return await prisma.$transaction(async (tx) => {
+    const updatedRole = await tx.userRole.update({
+      where: { id: activeRole.id },
+      data: { revokedAt: new Date() },
+    });
+
+    await AuditService.log({
+      actorId: adminId,
+      eventType: AuditEventType.ROLE_CHANGE,
+      action: AuditAction.REVOKE,
+      entityType: "UserRole",
+      entityId: activeRole.id,
+      stateBefore: activeRole,
+      stateAfter: updatedRole
+    }, tx);
+
+    return updatedRole;
   });
 };
 

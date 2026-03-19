@@ -1,0 +1,42 @@
+model AuditLog {
+  id            String   @id @default(uuid())
+
+  // Actor context
+  actorId       String?
+  userId        User?    @relation(fields: [actorId], references: [id])
+  sessionId     String?
+
+  // Event orientation
+  eventType     AuditEventType
+  action        AuditAction
+
+  // Target entity tracking
+  entityType    String
+  entityId      String?
+
+  // Snapshots (State tracking)
+  stateBefore   Json?
+  stateAfter    Json?
+
+  // Environment context
+  ipAddress     String?
+  userAgent     String?
+
+  // Risk & metadata
+  riskScore     Int      @default(0)
+  reason        String?
+
+  // Tamper-evident integrity chain
+  previousHash  String?
+  currentHash   String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([actorId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+

@@ -7,30 +7,63 @@ model Session {
     menteeId String
     mentee   MenteeProfile @relation(fields: [menteeId], references: [id])
 
-    availabilitySlotId String @unique
+    availabilitySlotId String           @unique
     availabilitySlot   AvailabilitySlot @relation(fields: [availabilitySlotId], references: [id])
 
     serviceId String
     service   ServiceOffering @relation(fields: [serviceId], references: [id])
 
-    sessionType String?
+    sessionType String? // e.g., "1-on-1", "Mock Interview"
 
-    // Snapshots for historical integrity
     startTime       DateTime
     durationMinutes Int
     priceAtBooking  Decimal  @db.Decimal(10, 2)
 
     status SessionStatus @default(PENDING)
+    notes  String?
 
-    videoLink String?
-    notes     String?
+    meetingLink String?
+
+    feedback Feedback?
+    payment  Payment?
 
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     deletedAt DateTime?
 
-    feedback Feedback?
-    payment  Payment?
-
     @@map("sessions")
 }
+
+model AuthSession {
+    id String @id @default(uuid())
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
+    // SHA-256 hash of the 256-bit refresh token
+    refreshTokenHash String? @unique
+
+    // Rotation Lineage
+    parentSessionId String? @unique
+    rootSessionId   String?
+
+    ipAddress String?
+    userAgent String?
+
+    // Timestamps for revocation and tracking
+    revokedAt        DateTime?
+    revocationReason RevocationReason?
+
+    // Expiry Management
+    expiresAt         DateTime // Idle Expiry (15 days)
+    absoluteExpiresAt DateTime // Hard Expiry (90 days)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("auth_sessions")
+}
+
+
+
+

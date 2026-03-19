@@ -2,6 +2,7 @@ enum ApplicationStatus {
     DRAFT
     SUBMITTED
     UNDER_REVIEW
+    ACTION_NEEDED  // New status for journal-style resubmission
     APPROVED
     REJECTED
 }

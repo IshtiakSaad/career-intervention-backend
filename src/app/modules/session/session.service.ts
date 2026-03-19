@@ -1,8 +1,9 @@
-import { Session, SessionStatus, SlotStatus } from '../../../generated/prisma';
+import { Session, SessionStatus, SlotStatus, AuditAction, AuditEventType } from '../../../generated/prisma';
 import prisma from '../../utils/prisma';
 import { ISessionBookPayload, ISessionUpdatePayload } from './session.interface';
 import { AppError } from '../../errorHelpers/app-error';
 import httpStatus from 'http-status';
+import AuditService from '../audit/audit.service';
 
 const bookSession = async (
   menteeId: string,
@@ -73,6 +74,15 @@ const bookSession = async (
         status: SessionStatus.PENDING
       }
     });
+
+    await AuditService.log({
+        actorId: (await tx.menteeProfile.findUnique({ where: { id: menteeId } }))?.userId,
+        eventType: AuditEventType.SESSION_EVENT,
+        action: AuditAction.CREATE,
+        entityType: "Session",
+        entityId: session.id,
+        stateAfter: session
+    }, tx);
 
     // 4. Update Slot Status
     await tx.availabilitySlot.update({

@@ -1,0 +1,12 @@
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  GRANT
+  REVOKE
+  CANCEL
+  APPROVE
+  REJECT
+  LOGIN
+  LOGOUT
+}

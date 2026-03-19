@@ -21,6 +21,7 @@ interface EnvConfig {
   SMTP_PORT?: string;
   SMTP_USER?: string;
   SMTP_PASS?: string;
+  ENCRYPTION_KEY_V1: string; // 32-byte hex string
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -39,6 +40,7 @@ const loadEnvVariables = (): EnvConfig => {
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_API_SECRET",
     "OPENROUTER_API_KEY",
+    "ENCRYPTION_KEY_V1",
   ];
 
   requiredEnvVariables.forEach((key) => {
@@ -66,6 +68,7 @@ const loadEnvVariables = (): EnvConfig => {
     SMTP_PORT: process.env.SMTP_PORT as string,
     SMTP_USER: process.env.SMTP_USER as string,
     SMTP_PASS: process.env.SMTP_PASS as string,
+    ENCRYPTION_KEY_V1: process.env.ENCRYPTION_KEY_V1 as string,
   };
 };
 

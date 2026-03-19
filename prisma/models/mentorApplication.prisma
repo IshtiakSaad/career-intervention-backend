@@ -6,14 +6,14 @@ model MentorApplication {
 
     bioDraft       String?
     expertiseAreas String[]
+    description    String?
 
     status ApplicationStatus @default(DRAFT)
 
     reviewedById String?
     reviewedBy   Admin?  @relation(fields: [reviewedById], references: [id])
 
-    rejectionReason String?
-    description     String?
+    feedback        String?
 
     reviewedAt DateTime?
     createdAt  DateTime  @default(now())

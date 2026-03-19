@@ -1,0 +1,20 @@
+model SecurityInfo {
+    id String @id @default(uuid())
+
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id])
+
+    // Encrypted TOTP secret: kid:iv:tag:ciphertext
+    twoFactorSecret String?
+
+    // Json array of hashed backup codes
+    backupCodes Json?
+
+    // For key rotation tracking
+    securityVersion Int @default(1)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("security_info")
+}
