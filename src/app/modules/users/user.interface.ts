@@ -48,7 +48,7 @@ export interface IUserResponse {
   phoneNumber?: string | null;
   profileImageUrl?: string | null;
   gender: Gender;
-  role: string | Role | string[];
+  roles: string[];
   createdAt: Date;
   updatedAt: Date;
 }

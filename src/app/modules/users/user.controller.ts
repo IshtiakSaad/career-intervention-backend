@@ -20,13 +20,14 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
 
   const user = await UserService.createUser({ ...payload, role: "MENTEE" } as IUserCreateByAdminPayload);
 
-  // Exclude passwordHash from response
-  const { passwordHash, ...userResponse } = user as any;
+  // Transform and exclude sensitive fields
+  const { passwordHash, userRoles, ...userResponse } = user as any;
+  const roles = userRoles?.map((ur: any) => ur.role) || [];
 
   res.status(201).json({
     success: true,
     message: "User registered successfully",
-    data: userResponse,
+    data: { ...userResponse, roles },
   });
 });
 
@@ -45,12 +46,13 @@ const createUserByAdmin = catchAsync(async (req: Request, res: Response) => {
 
   const user = await UserService.createUser(payload);
 
-  const { passwordHash, ...userResponse } = user as any;
+  const { passwordHash, userRoles, ...userResponse } = user as any;
+  const roles = userRoles?.map((ur: any) => ur.role) || [];
 
   res.status(201).json({
     success: true,
     message: "User created by admin successfully",
-    data: userResponse,
+    data: { ...userResponse, roles },
   });
 });
 
@@ -70,10 +72,11 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const result = await UserService.getAllUsers(filters, options);
 
 
-  // Exclude passwordHash from each user
-  const usersWithoutPasswords = result.data.map((user) => {
-    const { passwordHash, ...userResponse } = user as any;
-    return userResponse;
+  // Exclude passwordHash from each user and map roles
+  const usersWithRoles = result.data.map((user) => {
+    const { passwordHash, userRoles, ...userResponse } = user as any;
+    const roles = userRoles?.map((ur: any) => ur.role) || [];
+    return { ...userResponse, roles };
   });
 
   sendResponse(res, {
@@ -81,7 +84,7 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
     success: true,
     message: "Users fetched successfully",
     meta: result.meta,
-    data: usersWithoutPasswords,
+    data: usersWithRoles,
   });
 });
 
@@ -100,11 +103,12 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
     });
   }
 
-  const { passwordHash, ...userResponse } = user as any;
+  const { passwordHash, userRoles, ...userResponse } = user as any;
+  const roles = userRoles?.map((ur: any) => ur.role) || [];
 
   res.status(200).json({
     success: true,
-    data: userResponse,
+    data: { ...userResponse, roles },
   });
 });
 

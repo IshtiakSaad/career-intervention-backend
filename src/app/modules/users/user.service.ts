@@ -118,12 +118,22 @@ const getAllUsers = async (
 
     // 2. Filtering (exact matches)
     if (Object.keys(filterData).length > 0) {
-      andConditions.push({
-        AND: Object.keys(filterData).map((key) => ({
-          [key]: {
-            equals: (filterData as any)[key],
-          },
-        })),
+      Object.keys(filterData).forEach((key) => {
+        if (key === 'role') {
+          andConditions.push({
+            userRoles: {
+              some: {
+                role: (filterData as any)[key],
+              },
+            },
+          });
+        } else {
+          andConditions.push({
+            [key]: {
+              equals: (filterData as any)[key],
+            },
+          });
+        }
       });
     }
 
@@ -146,6 +156,7 @@ const getAllUsers = async (
         menteeProfile: true,
         mentorProfile: true,
         adminProfile: true,
+        userRoles: true,
       },
     });
 
@@ -180,6 +191,7 @@ const getSingleUser = async (id: string): Promise<PrismaUser | null> => {
         menteeProfile: true,
         mentorProfile: true,
         adminProfile: true,
+        userRoles: true,
       },
     });
   } catch (error) {
@@ -240,6 +252,7 @@ const getUsersByRole = async (role: PrismaRole): Promise<PrismaUser[]> => {
         menteeProfile: true,
         mentorProfile: true,
         adminProfile: true,
+        userRoles: true,
       },
     });
   } catch (error) {

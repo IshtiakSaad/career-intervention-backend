@@ -14,11 +14,28 @@ const bookSession = async (
     // 1. Check if slot is available and valid
     const slot = await tx.availabilitySlot.findUnique({
       where: { id: availabilitySlotId },
-      include: { mentor: true }
+      include: { 
+        mentor: {
+          include: { 
+            user: {
+              include: {
+                userRoles: {
+                  where: { role: 'MENTOR', revokedAt: null }
+                }
+              }
+            }
+          }
+        } 
+      }
     });
 
     if (!slot) {
       throw new AppError(httpStatus.NOT_FOUND, "Availability slot not found");
+    }
+
+    // Security Check: Is the mentor still authorized to teach?
+    if (!slot.mentor.user || slot.mentor.user.deletedAt || slot.mentor.user.userRoles.length === 0) {
+      throw new AppError(httpStatus.FORBIDDEN, "This mentor is no longer authorized to accept bookings");
     }
 
     if (slot.status !== SlotStatus.AVAILABLE) {

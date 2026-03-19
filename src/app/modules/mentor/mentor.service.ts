@@ -56,6 +56,19 @@ const getAllMentors = async (filters: any, options: IPaginationOptions) => {
     });
   }
 
+  // 3. Exclude soft-deleted users and ensure active Mentor role
+  andConditions.push({
+    user: {
+      deletedAt: null,
+      userRoles: {
+        some: {
+          role: 'MENTOR',
+          revokedAt: null,
+        },
+      },
+    },
+  });
+
   const whereConditions: Prisma.MentorProfileWhereInput = andConditions.length > 0 ? { AND: andConditions } : {};
 
   const result = await prisma.mentorProfile.findMany({
@@ -89,8 +102,19 @@ const getAllMentors = async (filters: any, options: IPaginationOptions) => {
 };
 
 const getSingleMentor = async (id: string) => {
-  return await prisma.mentorProfile.findUnique({
-    where: { id },
+  return await prisma.mentorProfile.findFirst({
+    where: { 
+      id,
+      user: {
+        deletedAt: null,
+        userRoles: {
+          some: {
+            role: 'MENTOR',
+            revokedAt: null,
+          },
+        },
+      },
+    },
     include: {
       user: {
         select: {
@@ -98,6 +122,7 @@ const getSingleMentor = async (id: string) => {
           email: true,
           profileImageUrl: true,
           gender: true,
+          userRoles: true,
         },
       },
     },

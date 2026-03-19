@@ -14,6 +14,24 @@ const createAvailabilitySlot = async (
     throw new AppError(httpStatus.BAD_REQUEST, "Start time must be before end time");
   }
 
+  // Security Check: Is the mentor still authorized?
+  const mentor = await prisma.mentorProfile.findUnique({
+    where: { id: mentorId },
+    include: { 
+      user: { 
+        include: { 
+          userRoles: { 
+            where: { role: 'MENTOR', revokedAt: null } 
+          } 
+        } 
+      } 
+    }
+  });
+
+  if (!mentor?.user || mentor.user.deletedAt || mentor.user.userRoles.length === 0) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are no longer authorized to create slots");
+  }
+
   // Check for conflicts
   const isConflict = await prisma.availabilitySlot.findFirst({
     where: {
@@ -50,6 +68,25 @@ const bulkCreateAvailabilitySlots = async (
   payload: IAvailabilitySlotBulkCreatePayload
 ) => {
   const { startDate, endDate, startTime, endTime, slotDuration } = payload;
+
+  // Security Check: Is the mentor still authorized?
+  const mentor = await prisma.mentorProfile.findUnique({
+    where: { id: mentorId },
+    include: { 
+      user: { 
+        include: { 
+          userRoles: { 
+            where: { role: 'MENTOR', revokedAt: null } 
+          } 
+        } 
+      } 
+    }
+  });
+
+  if (!mentor?.user || mentor.user.deletedAt || mentor.user.userRoles.length === 0) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are no longer authorized to create slots");
+  }
+  
   const slots = [];
 
   const currentDay = new Date(startDate);
