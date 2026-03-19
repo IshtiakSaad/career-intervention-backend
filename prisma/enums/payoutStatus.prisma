@@ -1,0 +1,8 @@
+enum PayoutStatus {
+    UNEARNED        // Session not yet completed (held in escrow)
+    PENDING_PAYOUT  // Session completed, but money not yet sent to mentor
+    PROCESSING
+    PAID
+    REJECTED
+    HELD            // Manual hold (dispute)
+}

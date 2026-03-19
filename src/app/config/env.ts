@@ -21,7 +21,12 @@ interface EnvConfig {
   SMTP_PORT?: string;
   SMTP_USER?: string;
   SMTP_PASS?: string;
-  ENCRYPTION_KEY_V1: string; // 32-byte hex string
+  ENCRYPTION_KEY_V1: string;
+  CLIENT_URL: string;
+  SSL_STORE_ID: string;
+  SSL_STORE_PASSWORD: string;
+  SSL_IS_SANDBOX: string;
+  SSL_BASE_URL: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -41,6 +46,7 @@ const loadEnvVariables = (): EnvConfig => {
     "CLOUDINARY_API_SECRET",
     "OPENROUTER_API_KEY",
     "ENCRYPTION_KEY_V1",
+    "CLIENT_URL",
   ];
 
   requiredEnvVariables.forEach((key) => {
@@ -69,6 +75,11 @@ const loadEnvVariables = (): EnvConfig => {
     SMTP_USER: process.env.SMTP_USER as string,
     SMTP_PASS: process.env.SMTP_PASS as string,
     ENCRYPTION_KEY_V1: process.env.ENCRYPTION_KEY_V1 as string,
+    CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+    SSL_STORE_ID: process.env.SSL_STORE_ID as string,
+    SSL_STORE_PASSWORD: process.env.SSL_STORE_PASSWORD as string,
+    SSL_IS_SANDBOX: process.env.SSL_IS_SANDBOX || "true",
+    SSL_BASE_URL: process.env.SSL_BASE_URL || "https://sandbox.sslcommerz.com",
   };
 };
 

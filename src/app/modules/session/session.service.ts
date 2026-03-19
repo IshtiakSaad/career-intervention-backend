@@ -133,7 +133,7 @@ const getMySessions = async (userId: string, roles: string[]) => {
       service: true,
       availabilitySlot: true,
       feedback: true,
-      payment: true
+      paymentIntent: true
     },
     orderBy: { startTime: 'desc' }
   });

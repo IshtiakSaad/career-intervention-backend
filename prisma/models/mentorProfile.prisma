@@ -25,6 +25,7 @@ model MentorProfile {
     availabilitySlots AvailabilitySlot[]
     serviceOfferings  ServiceOffering[]
     sessions          Session[]
+    payouts           Payout[]
     mentorSpecialties MentorSpecialty[]
 
     @@map("mentors")

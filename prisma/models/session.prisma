@@ -25,7 +25,8 @@ model Session {
     meetingLink String?
 
     feedback Feedback?
-    payment  Payment?
+    paymentIntent PaymentIntent?
+    payout   Payout?
 
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt

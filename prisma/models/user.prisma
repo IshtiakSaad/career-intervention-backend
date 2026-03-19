@@ -30,6 +30,7 @@ model User {
 
     authSessions        AuthSession[]
     auditLogsPerformed  AuditLog[]
+    paymentIntents      PaymentIntent[]
     passwordResetTokens PasswordResetToken[]
 
     userRoles          UserRole[]

@@ -7,6 +7,7 @@ import SessionProvider from "./session.provider";
 import { AppError } from "../../errorHelpers/app-error";
 import httpStatus from "http-status";
 import AuditService from "../audit/audit.service";
+import { sendEmail } from "../../utils/sendEmail";
 
 /**
  * Login User (Stateful)
@@ -216,6 +217,23 @@ const forgotPassword = async (
     ipAddress: context.ip,
     userAgent: context.ua,
     reason: "Password reset requested"
+  });
+
+  const resetLink = `${envVars.CLIENT_URL}/reset-password?token=${rawToken}`;
+
+  await sendEmail({
+    to: email,
+    subject: "Reset your password - Career Platform",
+    html: `
+      <div>
+        <h2>Password Reset Request</h2>
+        <p>Hi ${user.name || 'User'},</p>
+        <p>We received a request to reset your password. Click the link below to set a new password:</p>
+        <a href="${resetLink}" style="display:inline-block; padding:10px 20px; background-color:#007bff; color:white; text-decoration:none; border-radius:5px;">Reset Password</a>
+        <p>This link will expire in 15 minutes.</p>
+        <p>If you didn't request this, you can safely ignore this email.</p>
+      </div>
+    `
   });
 
   console.log(`[SEC_AUDIT] Password reset token for ${email}: ${rawToken}`);

@@ -1,13 +1,11 @@
-import { z } from "zod";
+import { z } from "zod/v4";
 
-const createPaymentValidationSchema = z.object({
+const initiatePaymentValidationSchema = z.object({
   body: z.object({
-    sessionId: z.string({ message: "Session ID is required" }),
-    amount: z.number({ message: "Amount is required" }).positive(),
-    currency: z.string().optional(),
+    sessionId: z.string().uuid("Invalid session ID"),
   }),
 });
 
 export const PaymentValidation = {
-  createPaymentValidationSchema,
+  initiatePaymentValidationSchema,
 };

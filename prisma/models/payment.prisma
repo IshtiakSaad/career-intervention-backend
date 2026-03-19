@@ -1,20 +1,83 @@
-model Payment {
-    id String @id @default(uuid())
+model PaymentIntent {
+  id        String @id @default(uuid())
 
-    sessionId String  @unique
-    session   Session @relation(fields: [sessionId], references: [id])
+  // Business context
+  sessionId String  @unique
+  session   Session @relation(fields: [sessionId], references: [id])
 
-    transactionId String? @unique // Gateway transaction ID
-    amount        Decimal @db.Decimal(10, 2)
-    currency      String  @default("USD")
+  userId    String  // Mentee ID
+  user      User    @relation(fields: [userId], references: [id])
 
-    status PaymentStatus @default(PENDING)
+  // Financial request
+  amount    Decimal @db.Decimal(10, 2)
+  currency  String  @default("BDT") // Default for SSLCommerz in BD
 
-    gatewayMetadata Json? // Raw metadata from provider (Stripe/SSLCommerz etc)
+  status    PaymentStatus @default(INITIATED)
+  gateway   PaymentGateway @default(SSLCOMMERZ)
 
-    webhookProcessedAt DateTime?
-    createdAt          DateTime  @default(now())
-    updatedAt          DateTime  @updatedAt
+  // Reconciliation
+  transactions PaymentTransaction[]
 
-    @@map("payments")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("payment_intents")
+}
+
+/**
+ * PaymentTransaction captures the raw reality of gateway interactions.
+ * Every IPN/Callback should create or update one of these.
+ */
+model PaymentTransaction {
+  id              String   @id @default(uuid())
+
+  paymentIntentId String
+  paymentIntent   PaymentIntent @relation(fields: [paymentIntentId], references: [id])
+
+  // Gateway specifics (SSLCommerz fields)
+  gatewayTranId   String?  @unique // Their unique tran_id
+  gatewayValId    String?  // Their validation id
+  bankTranId      String?  
+  
+  status          PaymentStatus
+  rawResponseBody Json?    // Critical for forensic audit of IPNs
+
+  // Verification tracking
+  isIPNValidated  Boolean  @default(false)
+  validatedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("payment_transactions")
+}
+
+/**
+ * Payout model tracks the custodial obligation the platform has to Mentors.
+ */
+model Payout {
+  id            String @id @default(uuid())
+
+  mentorId      String
+  mentor        MentorProfile @relation(fields: [mentorId], references: [id])
+
+  sessionId     String @unique
+  session       Session @relation(fields: [sessionId], references: [id])
+
+  // Split Logic
+  totalPrice    Decimal @db.Decimal(10, 2) // Paid by Mentee
+  mentorShare   Decimal @db.Decimal(10, 2) // Net amount for mentor
+  platformFee   Decimal @db.Decimal(10, 2) // Our cut
+
+  status        PayoutStatus @default(UNEARNED)
+
+  // Settlement details (Manual/Bank transfer info)
+  payoutMethod  String? // e.g., "bKash", "Bank NPSB"
+  payoutRef     String? // Transaction ID of the outbound payment
+  paidAt        DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("payouts")
 }

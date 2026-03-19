@@ -1,0 +1,6 @@
+enum PaymentGateway {
+    SSLCOMMERZ
+    STRIPE
+    BKASH_DIRECT
+    NAGAD_DIRECT
+}

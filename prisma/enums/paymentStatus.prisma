@@ -1,6 +1,8 @@
 enum PaymentStatus {
-    PENDING
-    COMPLETED
-    FAILED
-    REFUNDED
+    INITIATED   // PaymentIntent created, user not yet redirected
+    PENDING     // User redirected to gateway, waiting for result
+    SUCCESS     // IPN confirmed and validated
+    FAILED      // Gateway returned failure
+    CANCELLED   // User abandoned the payment page
+    REFUNDED    // Payment was reversed
 }
