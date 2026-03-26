@@ -2,13 +2,16 @@ import express from "express";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { PaymentValidation } from "./payment.validation";
 import { PaymentController } from "./payment.controller";
+import { PayoutController } from "./payout.controller";
 import { authMiddleware } from "../../middlewares/authMiddleware";
 
 const router = express.Router();
 
-// === Authenticated Routes ===
+// ═══════════════════════════════════════════
+// SSLCommerz Payment Flow
+// ═══════════════════════════════════════════
 
-// Mentee initiates a payment for a booked session
+// Mentee initiates payment for a booked session
 router.post(
   "/initiate",
   authMiddleware("MENTEE"),
@@ -18,23 +21,59 @@ router.post(
 
 // Get payment status by session ID
 router.get(
-  "/:sessionId",
+  "/status/:sessionId",
   authMiddleware("MENTOR", "MENTEE", "ADMIN"),
   PaymentController.getPayment
 );
 
 // === SSLCommerz Callback Routes (Public — called by gateway) ===
-
-// Success redirect (user lands here — DO NOT TRUST)
 router.post("/success", PaymentController.handleSuccess);
-
-// Failure redirect
 router.post("/fail", PaymentController.handleFail);
-
-// Cancel redirect
 router.post("/cancel", PaymentController.handleCancel);
-
-// IPN — Server-to-Server (SOURCE OF TRUTH)
 router.post("/ipn", PaymentController.handleIPN);
+
+// ═══════════════════════════════════════════
+// Payout Engine (Admin Only)
+// ═══════════════════════════════════════════
+
+router.get(
+  "/payouts",
+  authMiddleware("ADMIN"),
+  PayoutController.getAllPayouts
+);
+
+router.patch(
+  "/payouts/:id/process",
+  authMiddleware("ADMIN"),
+  validateRequest(PaymentValidation.processPayoutValidationSchema),
+  PayoutController.processPayout
+);
+
+// ═══════════════════════════════════════════
+// Disputes
+// ═══════════════════════════════════════════
+
+// Mentee files a dispute
+router.post(
+  "/disputes",
+  authMiddleware("MENTEE"),
+  validateRequest(PaymentValidation.fileDisputeValidationSchema),
+  PayoutController.fileDispute
+);
+
+// Admin views all disputes
+router.get(
+  "/disputes",
+  authMiddleware("ADMIN"),
+  PayoutController.getAllDisputes
+);
+
+// Admin resolves a dispute
+router.patch(
+  "/disputes/:id/resolve",
+  authMiddleware("ADMIN"),
+  validateRequest(PaymentValidation.resolveDisputeValidationSchema),
+  PayoutController.resolveDispute
+);
 
 export const PaymentRoutes = router;

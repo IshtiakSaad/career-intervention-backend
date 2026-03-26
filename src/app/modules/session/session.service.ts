@@ -76,7 +76,10 @@ const bookSession = async (
     });
 
     await AuditService.log({
-        actorId: (await tx.menteeProfile.findUnique({ where: { id: menteeId } }))?.userId,
+        actorId: (await tx.menteeProfile.findUnique({ 
+          where: { id: menteeId },
+          include: { user: true }
+        }))?.user?.id,
         eventType: AuditEventType.SESSION_EVENT,
         action: AuditAction.CREATE,
         entityType: "Session",
@@ -173,6 +176,15 @@ const updateSessionStatus = async (
         where: { id: session.mentorId },
         data: { completedSessions: { increment: 1 } }
       });
+
+      // Transition payout: UNEARNED → PENDING_PAYOUT (mentor earned it)
+      const payout = await tx.payout.findUnique({ where: { sessionId: id } });
+      if (payout && payout.status === "UNEARNED") {
+        await tx.payout.update({
+          where: { id: payout.id },
+          data: { status: "PENDING_PAYOUT" },
+        });
+      }
     }
 
     // If status changed to CANCELLED, update cancelRate

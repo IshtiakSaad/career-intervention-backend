@@ -9,10 +9,10 @@ import { IIPNPayload } from "./payment.interface";
 
 const PLATFORM_FEE_PERCENTAGE = 15; // 15% platform cut
 
-/**
- * Step 1: Initiate Payment
- * Creates a PaymentIntent and redirects user to SSLCommerz.
- */
+// ─────────────────────────────────────────────
+// INITIATE PAYMENT
+// ─────────────────────────────────────────────
+
 const initiatePayment = async (
   userId: string,
   sessionId: string,
@@ -41,15 +41,19 @@ const initiatePayment = async (
     throw new AppError(httpStatus.BAD_REQUEST, "Session is not in a payable state");
   }
 
-  // 2. Check idempotency — don't create duplicate intents
+  // 2. Idempotency — don't allow payment on already-paid sessions
   if (session.paymentIntent && session.paymentIntent.status === PaymentStatus.SUCCESS) {
     throw new AppError(httpStatus.CONFLICT, "Payment already completed for this session");
   }
 
-  // 3. Create or reuse PaymentIntent
+  // 3. Create or reuse PaymentIntent (allow retry on FAILED/CANCELLED)
   let paymentIntent = session.paymentIntent;
 
-  if (!paymentIntent || paymentIntent.status === PaymentStatus.FAILED || paymentIntent.status === PaymentStatus.CANCELLED) {
+  if (
+    !paymentIntent ||
+    paymentIntent.status === PaymentStatus.FAILED ||
+    paymentIntent.status === PaymentStatus.CANCELLED
+  ) {
     paymentIntent = await prisma.paymentIntent.create({
       data: {
         sessionId,
@@ -62,9 +66,13 @@ const initiatePayment = async (
     });
   }
 
-  // 4. Build SSLCommerz URLs
-  const baseUrl = `${envVars.SSL_BASE_URL ? envVars.CLIENT_URL : "http://localhost:3000"}`;
-  const serverBase = `http://localhost:${envVars.PORT}`;
+  // 4. Build SSLCommerz callback URLs
+  //    In production: use a proper SERVER_BASE_URL env var.
+  //    IPN must be a publicly-accessible URL.
+  const serverBase =
+    envVars.NODE_ENV === "production"
+      ? envVars.CLIENT_URL.replace(/\/$/, "") // strip trailing slash
+      : `http://localhost:${envVars.PORT}`;
 
   const sslPayload = {
     total_amount: Number(session.priceAtBooking),
@@ -87,20 +95,25 @@ const initiatePayment = async (
   // 5. Call SSLCommerz
   const gatewayResponse = await SSLCommerzGateway.initiate(sslPayload);
 
-  // 6. Mark as PENDING (user redirected)
+  // 6. Mark as PENDING (user is being redirected to gateway)
   await prisma.paymentIntent.update({
     where: { id: paymentIntent.id },
     data: { status: PaymentStatus.PENDING },
   });
 
-  // 7. Audit
+  // 7. Audit trail
   await AuditService.log({
     actorId: userId,
     eventType: AuditEventType.FINANCIAL_EVENT,
-    action: AuditAction.CREATE,
+    action: AuditAction.PAYMENT_INITIATED,
     entityType: "PaymentIntent",
     entityId: paymentIntent.id,
-    stateAfter: { amount: Number(session.priceAtBooking), gateway: "SSLCOMMERZ" },
+    stateAfter: {
+      amount: Number(session.priceAtBooking),
+      currency: "BDT",
+      gateway: "SSLCOMMERZ",
+      sessionId,
+    },
     ipAddress: context.ip,
     userAgent: context.ua,
     reason: "Payment initiated via SSLCommerz",
@@ -112,12 +125,13 @@ const initiatePayment = async (
   };
 };
 
-/**
- * Step 4: IPN Handler — SOURCE OF TRUTH
- * This is server-to-server. Never trust redirects.
- */
+// ─────────────────────────────────────────────
+// IPN HANDLER — SOURCE OF TRUTH
+// This is server-to-server. Never trust redirects.
+// ─────────────────────────────────────────────
+
 const handleIPN = async (ipnData: IIPNPayload) => {
-  const { tran_id, val_id, amount, status, bank_tran_id } = ipnData;
+  const { tran_id, val_id, status, bank_tran_id } = ipnData;
 
   // 1. Find PaymentIntent
   const paymentIntent = await prisma.paymentIntent.findUnique({
@@ -126,17 +140,17 @@ const handleIPN = async (ipnData: IIPNPayload) => {
   });
 
   if (!paymentIntent) {
-    console.error(`[IPN] Unknown tran_id: ${tran_id}`);
-    return;
+    console.error(`[IPN] Unknown tran_id: ${tran_id}. Possible attack vector.`);
+    return; // Return 200 anyway — don't leak info
   }
 
-  // 2. Idempotency — reject if already processed
+  // 2. Idempotency guard — never double-process
   if (paymentIntent.status === PaymentStatus.SUCCESS) {
-    console.warn(`[IPN] Duplicate IPN for tran_id: ${tran_id}. Ignoring.`);
+    console.warn(`[IPN] Duplicate IPN for tran_id: ${tran_id}. Already processed.`);
     return;
   }
 
-  // 3. Check IPN status
+  // 3. If SSLCommerz reports non-VALID status → mark FAILED
   if (status !== "VALID") {
     await prisma.$transaction(async (tx) => {
       await tx.paymentIntent.update({
@@ -156,20 +170,37 @@ const handleIPN = async (ipnData: IIPNPayload) => {
         },
       });
 
-      await AuditService.log({
-        eventType: AuditEventType.FINANCIAL_EVENT,
-        action: AuditAction.UPDATE,
-        entityType: "PaymentIntent",
-        entityId: tran_id,
-        riskScore: 90,
-        reason: `IPN reported non-VALID status: ${status}`,
-      }, tx);
+      await AuditService.log(
+        {
+          eventType: AuditEventType.FINANCIAL_EVENT,
+          action: AuditAction.PAYMENT_FAILED,
+          entityType: "PaymentIntent",
+          entityId: tran_id,
+          riskScore: 90,
+          reason: `IPN reported non-VALID status: ${status}`,
+        },
+        tx
+      );
     });
     return;
   }
 
-  // 4. Validate via SSLCommerz Validation API (CRITICAL)
-  const validation = await SSLCommerzGateway.validate(val_id);
+  // 4. Validate via SSLCommerz Validation API (CRITICAL — NEVER SKIP)
+  let validation;
+  try {
+    validation = await SSLCommerzGateway.validate(val_id);
+  } catch (err: any) {
+    // Validation API call failed — do NOT mark as success
+    await AuditService.log({
+      eventType: AuditEventType.FINANCIAL_EVENT,
+      action: AuditAction.PAYMENT_FAILED,
+      entityType: "PaymentIntent",
+      entityId: tran_id,
+      riskScore: 95,
+      reason: `SSLCommerz validation API call failed: ${err.message}`,
+    });
+    return;
+  }
 
   // 5. Amount tampering check (NON-NEGOTIABLE)
   const expectedAmount = Number(paymentIntent.amount);
@@ -182,27 +213,30 @@ const handleIPN = async (ipnData: IIPNPayload) => {
         data: { status: PaymentStatus.FAILED },
       });
 
-      await AuditService.log({
-        eventType: AuditEventType.FINANCIAL_EVENT,
-        action: AuditAction.UPDATE,
-        entityType: "PaymentIntent",
-        entityId: tran_id,
-        riskScore: 100,
-        reason: `AMOUNT TAMPERING DETECTED. Expected: ${expectedAmount}, Paid: ${paidAmount}`,
-      }, tx);
+      await AuditService.log(
+        {
+          eventType: AuditEventType.FINANCIAL_EVENT,
+          action: AuditAction.PAYMENT_FAILED,
+          entityType: "PaymentIntent",
+          entityId: tran_id,
+          riskScore: 100,
+          reason: `AMOUNT TAMPERING DETECTED. Expected: ${expectedAmount} BDT, Received: ${paidAmount} BDT`,
+        },
+        tx
+      );
     });
     throw new AppError(httpStatus.BAD_REQUEST, "Amount mismatch detected");
   }
 
-  // 6. SUCCESS — Atomic update
+  // 6. ALL CHECKS PASSED — Atomic success transaction
   await prisma.$transaction(async (tx) => {
-    // 6a. Mark PaymentIntent as SUCCESS
+    // 6a. Mark PaymentIntent SUCCESS
     await tx.paymentIntent.update({
       where: { id: tran_id },
       data: { status: PaymentStatus.SUCCESS },
     });
 
-    // 6b. Create PaymentTransaction (forensic record)
+    // 6b. Create forensic PaymentTransaction record
     await tx.paymentTransaction.create({
       data: {
         paymentIntentId: tran_id,
@@ -216,54 +250,62 @@ const handleIPN = async (ipnData: IIPNPayload) => {
       },
     });
 
-    // 6c. Confirm Session
+    // 6c. Confirm Session (booking is now paid)
     await tx.session.update({
       where: { id: paymentIntent.sessionId },
       data: { status: SessionStatus.CONFIRMED },
     });
 
-    // 6d. Create Payout record (Custodial Ledger)
+    // 6d. Create Payout record (Custodial Ledger — platform owes mentor)
     const totalPrice = Number(paymentIntent.amount);
-    const platformFee = parseFloat(((totalPrice * PLATFORM_FEE_PERCENTAGE) / 100).toFixed(2));
+    const platformFee = parseFloat(
+      ((totalPrice * PLATFORM_FEE_PERCENTAGE) / 100).toFixed(2)
+    );
     const mentorShare = parseFloat((totalPrice - platformFee).toFixed(2));
 
     await tx.payout.create({
       data: {
         mentorId: paymentIntent.session.mentorId,
         sessionId: paymentIntent.sessionId,
-        totalPrice: totalPrice,
-        mentorShare: mentorShare,
-        platformFee: platformFee,
+        totalPrice,
+        mentorShare,
+        platformFee,
         status: "UNEARNED",
       },
     });
 
-    // 6e. Audit
-    await AuditService.log({
-      actorId: paymentIntent.userId,
-      eventType: AuditEventType.FINANCIAL_EVENT,
-      action: AuditAction.UPDATE,
-      entityType: "PaymentIntent",
-      entityId: tran_id,
-      stateAfter: {
-        amount: totalPrice,
-        mentorShare,
-        platformFee,
-        gateway: "SSLCOMMERZ",
-        bankTranId: validation.bank_tran_id,
+    // 6e. Forensic audit
+    await AuditService.log(
+      {
+        actorId: paymentIntent.userId,
+        eventType: AuditEventType.FINANCIAL_EVENT,
+        action: AuditAction.PAYMENT_SUCCESS,
+        entityType: "PaymentIntent",
+        entityId: tran_id,
+        stateAfter: {
+          amount: totalPrice,
+          mentorShare,
+          platformFee,
+          gateway: "SSLCOMMERZ",
+          bankTranId: validation.bank_tran_id,
+          valId: validation.val_id,
+        },
+        riskScore: 80,
+        reason: "Payment validated and confirmed via SSLCommerz IPN",
       },
-      riskScore: 80,
-      reason: "Payment validated and confirmed via IPN",
-    }, tx);
+      tx
+    );
   });
 };
 
-/**
- * Handle redirect-based status updates (UNTRUSTED)
- * These only update UI state, never business logic.
- */
+// ─────────────────────────────────────────────
+// REDIRECT HANDLERS (UNTRUSTED — UI only)
+// These never determine business truth.
+// ─────────────────────────────────────────────
+
 const handleRedirectFail = async (tran_id: string) => {
   const pi = await prisma.paymentIntent.findUnique({ where: { id: tran_id } });
+  // Guard: never overwrite a SUCCESS state
   if (pi && pi.status !== PaymentStatus.SUCCESS) {
     await prisma.paymentIntent.update({
       where: { id: tran_id },
@@ -282,9 +324,10 @@ const handleRedirectCancel = async (tran_id: string) => {
   }
 };
 
-/**
- * Query helpers
- */
+// ─────────────────────────────────────────────
+// QUERY HELPERS
+// ─────────────────────────────────────────────
+
 const getPaymentBySessionId = async (sessionId: string) => {
   return await prisma.paymentIntent.findUnique({
     where: { sessionId },

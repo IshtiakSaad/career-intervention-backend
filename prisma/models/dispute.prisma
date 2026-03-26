@@ -1,0 +1,24 @@
+model Dispute {
+  id        String @id @default(uuid())
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  // Who filed the dispute
+  filedById String
+  filedBy   User @relation("DisputeFiler", fields: [filedById], references: [id])
+
+  // Who resolved it (Admin)
+  resolvedById String?
+  resolvedBy   User? @relation("DisputeResolver", fields: [resolvedById], references: [id])
+
+  reason        String      // Mentee's complaint
+  status        DisputeStatus @default(OPEN)
+  resolution    String?      // Admin's resolution note
+  resolvedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("disputes")
+}

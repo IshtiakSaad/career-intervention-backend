@@ -27,6 +27,7 @@ model Session {
     feedback Feedback?
     paymentIntent PaymentIntent?
     payout   Payout?
+    disputes Dispute[]
 
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
