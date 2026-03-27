@@ -25,8 +25,8 @@ CREATE TYPE "PayoutStatus" AS ENUM ('UNEARNED', 'PENDING_PAYOUT', 'PROCESSING', 
 BEGIN;
 CREATE TYPE "PaymentStatus_new" AS ENUM ('INITIATED', 'PENDING', 'SUCCESS', 'FAILED', 'CANCELLED', 'REFUNDED');
 ALTER TABLE "public"."payments" ALTER COLUMN "status" DROP DEFAULT;
-ALTER TABLE "payment_intents" ALTER COLUMN "status" TYPE "PaymentStatus_new" USING ("status"::text::"PaymentStatus_new");
-ALTER TABLE "payment_transactions" ALTER COLUMN "status" TYPE "PaymentStatus_new" USING ("status"::text::"PaymentStatus_new");
+-- Removed incorrect ALTER TABLE for non-existent payment_intents
+-- Removed incorrect ALTER TABLE for non-existent payment_transactions
 ALTER TYPE "PaymentStatus" RENAME TO "PaymentStatus_old";
 ALTER TYPE "PaymentStatus_new" RENAME TO "PaymentStatus";
 DROP TYPE "public"."PaymentStatus_old";

@@ -13,6 +13,7 @@ import { MentorSpecialtyRoutes } from "../modules/mentorSpecialty/mentorSpecialt
 import { UserRoleRoutes } from "../modules/userRole/userRole.routes";
 import { MentorApplicationRoutes } from "../modules/mentorApplication/mentorApplication.routes";
 import { AiRoutes } from "../modules/ai/ai.routes";
+import { NotificationRoutes } from "../modules/notification/notification.routes";
 
 const router = express.Router();
 
@@ -32,6 +33,7 @@ router.use("/mentor-specialties", MentorSpecialtyRoutes);   // /api/v1/mentor-sp
 router.use("/user-roles", UserRoleRoutes);                  // /api/v1/user-roles
 router.use("/mentor-applications", MentorApplicationRoutes); // /api/v1/mentor-applications
 router.use("/ai", AiRoutes);                                // /api/v1/ai
+router.use("/notifications", NotificationRoutes);           // /api/v1/notifications
 
 
 // Optional root route

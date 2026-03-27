@@ -1,8 +1,9 @@
-import { AuditAction, AuditEventType, PayoutStatus } from "../../../generated/prisma";
+import { AuditAction, AuditEventType, PayoutStatus, NotificationType } from "../../../generated/prisma";
 import prisma from "../../utils/prisma";
 import { AppError } from "../../errorHelpers/app-error";
 import httpStatus from "http-status";
 import AuditService from "../audit/audit.service";
+import NotificationService from "../notification/notification.service";
 import { IProcessPayoutPayload, IFileDisputePayload, IResolveDisputePayload } from "./payment.interface";
 
 // ─────────────────────────────────────────────
@@ -84,6 +85,23 @@ const processPayout = async (
       },
       tx
     );
+
+    // Notify mentor that payout has been processed
+    const mentorProfile = await tx.mentorProfile.findUnique({
+      where: { id: payout.mentorId },
+      include: { user: true },
+    });
+
+    if (mentorProfile) {
+      await NotificationService.dispatch({
+        userId: mentorProfile.user.id,
+        type: NotificationType.PAYOUT_PROCESSED,
+        title: "Payout Processed",
+        body: `Your payout of ${Number(payout.mentorShare)} BDT has been processed via ${payload.payoutMethod}.`,
+        entityType: "Payout",
+        entityId: payoutId,
+      }, tx);
+    }
 
     return updated;
   });
@@ -177,6 +195,23 @@ const fileDispute = async (userId: string, payload: IFileDisputePayload) => {
       tx
     );
 
+    // Notify mentor about the dispute
+    const mentorProfile = await tx.mentorProfile.findUnique({
+      where: { id: session.mentorId },
+      include: { user: true },
+    });
+
+    if (mentorProfile) {
+      await NotificationService.dispatch({
+        userId: mentorProfile.user.id,
+        type: NotificationType.DISPUTE_OPENED,
+        title: "Dispute Filed",
+        body: `A dispute has been filed against one of your sessions.`,
+        entityType: "Dispute",
+        entityId: created.id,
+      }, tx);
+    }
+
     return created;
   });
 
@@ -261,6 +296,31 @@ const resolveDispute = async (
         riskScore: 85,
         reason: `Admin resolved dispute: ${payload.outcome}`,
       },
+      tx
+    );
+
+    // Notify both the filer and the mentor
+    const session = await tx.session.findUnique({
+      where: { id: dispute.sessionId },
+      include: { mentor: { include: { user: true } } },
+    });
+
+    const outcomeText = payload.outcome === "REFUND" ? "Refund approved" : "Dispute denied";
+
+    const notificationTargets: string[] = [dispute.filedById];
+    if (session?.mentor?.user?.id && session.mentor.user.id !== dispute.filedById) {
+      notificationTargets.push(session.mentor.user.id);
+    }
+
+    await NotificationService.dispatchBulk(
+      notificationTargets.map((uid) => ({
+        userId: uid,
+        type: NotificationType.DISPUTE_RESOLVED,
+        title: "Dispute Resolved",
+        body: `A dispute has been resolved: ${outcomeText}.`,
+        entityType: "Dispute",
+        entityId: disputeId,
+      })),
       tx
     );
 

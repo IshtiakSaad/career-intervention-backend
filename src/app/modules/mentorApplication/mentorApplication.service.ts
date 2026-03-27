@@ -1,9 +1,10 @@
-import { MentorApplication, ApplicationStatus, Role, DocumentStatus, AuditAction, AuditEventType } from "../../../generated/prisma";
+import { MentorApplication, ApplicationStatus, Role, DocumentStatus, AuditAction, AuditEventType, NotificationType } from "../../../generated/prisma";
 import prisma from "../../utils/prisma";
 import { AppError } from "../../errorHelpers/app-error";
 import httpStatus from "http-status";
 import { IMentorApplicationSubmitPayload, IMentorApplicationResubmitPayload, IDocumentUpload } from "./mentorApplication.interface";
 import AuditService from "../audit/audit.service";
+import NotificationService from "../notification/notification.service";
 
 /**
  * Submit a new application to become a Mentor.
@@ -167,6 +168,30 @@ const reviewApplication = async (
               description: application.description,
           }
       });
+
+      // Notify applicant of approval
+      await NotificationService.dispatch({
+        userId: application.userId,
+        type: NotificationType.APPLICATION_APPROVED,
+        title: "Application Approved!",
+        body: "Congratulations! Your mentor application has been approved. You can now start accepting sessions.",
+        entityType: "MentorApplication",
+        entityId: applicationId,
+      }, tx);
+    }
+
+    // Notify applicant of rejection
+    if (status === ApplicationStatus.REJECTED) {
+      await NotificationService.dispatch({
+        userId: application.userId,
+        type: NotificationType.APPLICATION_REJECTED,
+        title: "Application Update",
+        body: feedback
+          ? `Your mentor application was not approved. Feedback: ${feedback}`
+          : "Your mentor application was not approved at this time.",
+        entityType: "MentorApplication",
+        entityId: applicationId,
+      }, tx);
     }
 
     return updatedApplication;

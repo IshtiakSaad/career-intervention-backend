@@ -1,9 +1,10 @@
-import { Session, SessionStatus, SlotStatus, AuditAction, AuditEventType } from '../../../generated/prisma';
+import { Session, SessionStatus, SlotStatus, AuditAction, AuditEventType, NotificationType } from '../../../generated/prisma';
 import prisma from '../../utils/prisma';
 import { ISessionBookPayload, ISessionUpdatePayload } from './session.interface';
 import { AppError } from '../../errorHelpers/app-error';
 import httpStatus from 'http-status';
 import AuditService from '../audit/audit.service';
+import NotificationService from '../notification/notification.service';
 
 const bookSession = async (
   menteeId: string,
@@ -75,11 +76,13 @@ const bookSession = async (
       }
     });
 
+    const menteeUser = await tx.menteeProfile.findUnique({ 
+      where: { id: menteeId },
+      include: { user: true }
+    });
+
     await AuditService.log({
-        actorId: (await tx.menteeProfile.findUnique({ 
-          where: { id: menteeId },
-          include: { user: true }
-        }))?.user?.id,
+        actorId: menteeUser?.user?.id,
         eventType: AuditEventType.SESSION_EVENT,
         action: AuditAction.CREATE,
         entityType: "Session",
@@ -87,13 +90,23 @@ const bookSession = async (
         stateAfter: session
     }, tx);
 
-    // 4. Update Slot Status
+    // 4. Notify mentor about the new booking
+    await NotificationService.dispatch({
+      userId: slot.mentor.user.id,
+      type: NotificationType.SESSION_BOOKED,
+      title: "New Session Booked",
+      body: `A mentee has booked a session with you for ${slot.startTime.toLocaleDateString()}.`,
+      entityType: "Session",
+      entityId: session.id,
+    }, tx);
+
+    // 5. Update Slot Status
     await tx.availabilitySlot.update({
       where: { id: availabilitySlotId },
       data: { status: SlotStatus.BOOKED }
     });
 
-    // 5. Increment Mentor's Total Sessions
+    // 6. Increment Mentor's Total Sessions
     await tx.mentorProfile.update({
       where: { id: slot.mentorId },
       data: { totalSessions: { increment: 1 } }
@@ -185,6 +198,26 @@ const updateSessionStatus = async (
           data: { status: "PENDING_PAYOUT" },
         });
       }
+
+      // Notify both parties
+      await NotificationService.dispatchBulk([
+        {
+          userId: session.mentor.user.id,
+          type: NotificationType.SESSION_COMPLETED,
+          title: "Session Completed",
+          body: "Your session has been marked as completed.",
+          entityType: "Session",
+          entityId: id,
+        },
+        {
+          userId: session.mentee.user.id,
+          type: NotificationType.SESSION_COMPLETED,
+          title: "Session Completed",
+          body: "Your session has been marked as completed.",
+          entityType: "Session",
+          entityId: id,
+        },
+      ], tx);
     }
 
     // If status changed to CANCELLED, update cancelRate
@@ -202,6 +235,26 @@ const updateSessionStatus = async (
         where: { id: session.mentorId },
         data: { cancelRate: parseFloat(cancelRate.toFixed(2)) }
       });
+
+      // Notify both parties
+      await NotificationService.dispatchBulk([
+        {
+          userId: session.mentor.user.id,
+          type: NotificationType.SESSION_CANCELLED,
+          title: "Session Cancelled",
+          body: "A session has been cancelled.",
+          entityType: "Session",
+          entityId: id,
+        },
+        {
+          userId: session.mentee.user.id,
+          type: NotificationType.SESSION_CANCELLED,
+          title: "Session Cancelled",
+          body: "Your session has been cancelled.",
+          entityType: "Session",
+          entityId: id,
+        },
+      ], tx);
     }
 
     return updatedSession;

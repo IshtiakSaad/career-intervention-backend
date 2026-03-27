@@ -1,10 +1,12 @@
-import { PaymentStatus, SessionStatus, AuditAction, AuditEventType } from "../../../generated/prisma";
+import { PaymentStatus, SessionStatus, AuditAction, AuditEventType, NotificationType } from "../../../generated/prisma";
 import prisma from "../../utils/prisma";
 import { envVars } from "../../config/env";
 import { AppError } from "../../errorHelpers/app-error";
 import httpStatus from "http-status";
 import SSLCommerzGateway from "./sslcommerz.gateway";
 import AuditService from "../audit/audit.service";
+import NotificationService from "../notification/notification.service";
+import MeetingService from "../meeting/meeting.service";
 import { IIPNPayload } from "./payment.interface";
 
 const PLATFORM_FEE_PERCENTAGE = 15; // 15% platform cut
@@ -181,6 +183,16 @@ const handleIPN = async (ipnData: IIPNPayload) => {
         },
         tx
       );
+
+      // Notify mentee of payment failure
+      await NotificationService.dispatch({
+        userId: paymentIntent.userId,
+        type: NotificationType.PAYMENT_FAILED,
+        title: "Payment Failed",
+        body: `Your payment of ${Number(paymentIntent.amount)} BDT failed. Please try again.`,
+        entityType: "PaymentIntent",
+        entityId: tran_id,
+      }, tx);
     });
     return;
   }
@@ -250,10 +262,13 @@ const handleIPN = async (ipnData: IIPNPayload) => {
       },
     });
 
-    // 6c. Confirm Session (booking is now paid)
-    await tx.session.update({
+    // 6c. Confirm Session (booking is now paid) + assign meeting link
+    const confirmedSession = await tx.session.update({
       where: { id: paymentIntent.sessionId },
-      data: { status: SessionStatus.CONFIRMED },
+      data: {
+        status: SessionStatus.CONFIRMED,
+        meetingLink: MeetingService.generateMeetingLink(paymentIntent.sessionId),
+      },
     });
 
     // 6d. Create Payout record (Custodial Ledger — platform owes mentor)
@@ -295,6 +310,26 @@ const handleIPN = async (ipnData: IIPNPayload) => {
       },
       tx
     );
+
+    // 6f. Notify mentee: payment success + session confirmed
+    await NotificationService.dispatchBulk([
+      {
+        userId: paymentIntent.userId,
+        type: NotificationType.PAYMENT_SUCCESS,
+        title: "Payment Successful",
+        body: `Your payment of ${totalPrice} BDT has been received.`,
+        entityType: "PaymentIntent",
+        entityId: tran_id,
+      },
+      {
+        userId: paymentIntent.userId,
+        type: NotificationType.SESSION_CONFIRMED,
+        title: "Session Confirmed",
+        body: `Your session is confirmed! Meeting link has been generated.`,
+        entityType: "Session",
+        entityId: paymentIntent.sessionId,
+      },
+    ], tx);
   });
 };
 

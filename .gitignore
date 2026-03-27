@@ -42,6 +42,11 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
+# Diagnostic and temp files
+tsc_output.txt
+test.txt
+prisma_gen.txt
+
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -54,6 +59,6 @@ Thumbs.db
 # TypeScript cache
 *.tsbuildinfo
 
-# Coverage directory used by tools like istanbul
+# Coverage directory
 coverage/
 *.lcov

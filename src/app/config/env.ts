@@ -27,6 +27,8 @@ interface EnvConfig {
   SSL_STORE_PASSWORD: string;
   SSL_IS_SANDBOX: string;
   SSL_BASE_URL: string;
+  MEETING_ROOM_SECRET?: string;
+  SESSION_PAYMENT_TIMEOUT_MINUTES?: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -80,6 +82,8 @@ const loadEnvVariables = (): EnvConfig => {
     SSL_STORE_PASSWORD: process.env.SSL_STORE_PASSWORD as string,
     SSL_IS_SANDBOX: process.env.SSL_IS_SANDBOX || "true",
     SSL_BASE_URL: process.env.SSL_BASE_URL || "https://sandbox.sslcommerz.com",
+    MEETING_ROOM_SECRET: process.env.MEETING_ROOM_SECRET,
+    SESSION_PAYMENT_TIMEOUT_MINUTES: process.env.SESSION_PAYMENT_TIMEOUT_MINUTES || "30",
   };
 };
 

@@ -1,0 +1,24 @@
+enum NotificationType {
+  // Session lifecycle
+  SESSION_BOOKED
+  SESSION_CONFIRMED
+  SESSION_CANCELLED
+  SESSION_REMINDER
+  SESSION_COMPLETED
+
+  // Payment lifecycle
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  PAYOUT_PROCESSED
+
+  // Dispute lifecycle
+  DISPUTE_OPENED
+  DISPUTE_RESOLVED
+
+  // Application lifecycle
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+
+  // System
+  SYSTEM_ANNOUNCEMENT
+}

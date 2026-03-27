@@ -1,0 +1,26 @@
+model Notification {
+  id        String   @id @default(uuid())
+
+  // Recipient
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Content
+  type      NotificationType
+  title     String
+  body      String
+
+  // Contextual deep-link to the entity that caused this notification
+  entityType String?
+  entityId   String?
+
+  // State
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
