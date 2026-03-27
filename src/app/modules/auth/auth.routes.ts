@@ -3,11 +3,13 @@ import { AuthController } from "./auth.controller";
 import { AuthValidation } from "./auth.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { authMiddleware } from "../../middlewares/authMiddleware";
+import { authRateLimiter } from "../../middlewares/rateLimiter";
 
 const router = express.Router();
 
 router.post(
   "/login",
+  authRateLimiter,
   validateRequest(AuthValidation.loginValidationSchema),
   AuthController.loginUser
 );

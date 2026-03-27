@@ -29,6 +29,8 @@ interface EnvConfig {
   SSL_BASE_URL: string;
   MEETING_ROOM_SECRET?: string;
   SESSION_PAYMENT_TIMEOUT_MINUTES?: string;
+  REDIS_URL: string;
+  PLATFORM_FEE_PERCENTAGE: string;
 }
 
 const loadEnvVariables = (): EnvConfig => {
@@ -49,6 +51,11 @@ const loadEnvVariables = (): EnvConfig => {
     "OPENROUTER_API_KEY",
     "ENCRYPTION_KEY_V1",
     "CLIENT_URL",
+    "REDIS_URL",
+    "SSL_STORE_ID",
+    "SSL_STORE_PASSWORD",
+    "MEETING_ROOM_SECRET",
+    "PLATFORM_FEE_PERCENTAGE",
   ];
 
   requiredEnvVariables.forEach((key) => {
@@ -84,6 +91,8 @@ const loadEnvVariables = (): EnvConfig => {
     SSL_BASE_URL: process.env.SSL_BASE_URL || "https://sandbox.sslcommerz.com",
     MEETING_ROOM_SECRET: process.env.MEETING_ROOM_SECRET,
     SESSION_PAYMENT_TIMEOUT_MINUTES: process.env.SESSION_PAYMENT_TIMEOUT_MINUTES || "30",
+    REDIS_URL: process.env.REDIS_URL || "redis://localhost:6379",
+    PLATFORM_FEE_PERCENTAGE: process.env.PLATFORM_FEE_PERCENTAGE || "15",
   };
 };
 

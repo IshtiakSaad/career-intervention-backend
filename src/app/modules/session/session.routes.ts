@@ -3,12 +3,14 @@ import { validateRequest } from '../../middlewares/validateRequest';
 import { SessionValidation } from './session.validation';
 import { SessionController } from './session.controller';
 import { authMiddleware } from '../../middlewares/authMiddleware';
+import { bookingRateLimiter } from '../../middlewares/rateLimiter';
 
 const router = express.Router();
 
 router.post(
   '/book',
   authMiddleware('MENTEE'),
+  bookingRateLimiter,
   validateRequest(SessionValidation.bookSessionValidationSchema),
   SessionController.bookSession
 );

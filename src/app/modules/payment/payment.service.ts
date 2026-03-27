@@ -9,7 +9,7 @@ import NotificationService from "../notification/notification.service";
 import MeetingService from "../meeting/meeting.service";
 import { IIPNPayload } from "./payment.interface";
 
-const PLATFORM_FEE_PERCENTAGE = 15; // 15% platform cut
+const PLATFORM_FEE_PERCENTAGE = Number(envVars.PLATFORM_FEE_PERCENTAGE); // Managed via env
 
 // ─────────────────────────────────────────────
 // INITIATE PAYMENT

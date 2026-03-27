@@ -4,7 +4,7 @@ import httpStatus from "http-status";
 import { getAiCompletion } from "../../utils/aiHelper";
 
 const suggestMentors = async (query: string) => {
-  // 1. Fetch available mentors to provide as context (Basic Mock-RAG approach)
+  // 1. Fetch available mentors to provide as context (Context-Injection RAG approach)
   // In a real production system with 1000s of mentors, you would use embeddings/pgvector here.
   const mentors = await prisma.mentorProfile.findMany({
     where: { activeStatus: true },

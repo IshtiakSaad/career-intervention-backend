@@ -3,10 +3,21 @@ import { paginationHelper } from "../../helpers/paginationHelper";
 import { IPaginationOptions } from "../../interfaces/pagination";
 import { mentorSearchableFields } from "./mentor.constant";
 import prisma from "../../utils/prisma";
+import RedisService from "../../utils/redis";
 
 const getAllMentors = async (filters: any, options: IPaginationOptions) => {
   const { searchTerm, specialties, ...filterData } = filters;
   const { limit, page, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
+
+  // 1. Generate Cache Key
+  const cacheKey = `mentors:search:${JSON.stringify(filters)}:${JSON.stringify(options)}`;
+
+  // 2. Try Cache
+  const cachedData = await RedisService.get<any>(cacheKey);
+  if (cachedData) {
+    console.log("⚡ Cache Hit: Mentors Search");
+    return cachedData;
+  }
 
   const andConditions: Prisma.MentorProfileWhereInput[] = [];
 
@@ -71,34 +82,40 @@ const getAllMentors = async (filters: any, options: IPaginationOptions) => {
 
   const whereConditions: Prisma.MentorProfileWhereInput = andConditions.length > 0 ? { AND: andConditions } : {};
 
-  const result = await prisma.mentorProfile.findMany({
-    where: whereConditions,
-    skip,
-    take: limit,
-    orderBy: { [sortBy]: sortOrder },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-          profileImageUrl: true,
-          gender: true,
+  const [result, total] = await Promise.all([
+    prisma.mentorProfile.findMany({
+      where: whereConditions,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            profileImageUrl: true,
+            gender: true,
+          },
         },
-      },
-      mentorSpecialties: {
-        include: {
-          specialty: true
+        mentorSpecialties: {
+          include: {
+            specialty: true
+          }
         }
-      }
-    },
-  });
+      },
+    }),
+    prisma.mentorProfile.count({ where: whereConditions })
+  ]);
 
-  const total = await prisma.mentorProfile.count({ where: whereConditions });
-
-  return {
+  const response = {
     meta: { page, limit, total },
     data: result
   };
+
+  // 4. Set Cache (TTL: 10 minutes)
+  await RedisService.set(cacheKey, response, 600);
+
+  return response;
 };
 
 const getSingleMentor = async (id: string) => {
@@ -130,10 +147,15 @@ const getSingleMentor = async (id: string) => {
 };
 
 const verifyMentor = async (id: string, isVerified: boolean) => {
-  return await prisma.mentorProfile.update({
+  const result = await prisma.mentorProfile.update({
     where: { id },
     data: { verificationBadge: isVerified },
   });
+
+  // Invalidate search cache
+  await RedisService.delByPattern("mentors:search:*");
+
+  return result;
 };
 
 

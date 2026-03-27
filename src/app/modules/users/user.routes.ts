@@ -4,16 +4,19 @@ import { UserValidation } from "./user.validation";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { authMiddleware } from "../../middlewares/authMiddleware";
 import { FileUploadMiddleware } from "../../middlewares/fileUpload";
+import { authRateLimiter } from "../../middlewares/rateLimiter";
 
 const router = express.Router();
 
 // Self-registration (open to anyone)
 router.post(
   "/register",
+  authRateLimiter,
   FileUploadMiddleware.single("file"),
   validateRequest(UserValidation.createUserValidationSchema),
   UserController.registerUser
 );
+
 
 // Admin creates new user (MENTOR or ADMIN)
 router.post(

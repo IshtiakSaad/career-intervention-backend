@@ -62,3 +62,23 @@ Thumbs.db
 # Coverage directory
 coverage/
 *.lcov
+
+# Linting & Tools Cache
+.eslintcache
+.prettiercache
+.stylelintcache
+
+# Process Management Logs
+.pm2/
+pm2.log
+
+# Databases (Local/Testing)
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# Secrets & Certificates
+*.pem
+*.key
+*.cert

@@ -14,6 +14,7 @@ import { UserRoleRoutes } from "../modules/userRole/userRole.routes";
 import { MentorApplicationRoutes } from "../modules/mentorApplication/mentorApplication.routes";
 import { AiRoutes } from "../modules/ai/ai.routes";
 import { NotificationRoutes } from "../modules/notification/notification.routes";
+import { DashboardRoutes } from "../modules/dashboard/dashboard.routes";
 
 const router = express.Router();
 
@@ -34,6 +35,7 @@ router.use("/user-roles", UserRoleRoutes);                  // /api/v1/user-role
 router.use("/mentor-applications", MentorApplicationRoutes); // /api/v1/mentor-applications
 router.use("/ai", AiRoutes);                                // /api/v1/ai
 router.use("/notifications", NotificationRoutes);           // /api/v1/notifications
+router.use("/dashboards", DashboardRoutes);                 // /api/v1/dashboards
 
 
 // Optional root route
