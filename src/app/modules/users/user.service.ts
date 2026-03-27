@@ -2,7 +2,6 @@ import { User as PrismaUser, Role as PrismaRole } from '../../../generated/prism
 import { hashPassword } from '../../utils/hashPassword';
 import prisma from '../../utils/prisma';
 import { IUserCreateByAdminPayload, IUserUpdatePayload } from './user.interface';
-import RedisService from '../../utils/redis';
 
 
 /**
@@ -215,9 +214,6 @@ const updateUser = async (
       data: payload,
     });
 
-    // Invalidate mentor search cache in case this user is a mentor
-    await RedisService.delByPattern("mentors:search:*");
-
     return result;
   } catch (error) {
     console.error("Error in updateUser:", error);
@@ -234,9 +230,6 @@ const deleteUser = async (id: string): Promise<PrismaUser> => {
       where: { id },
       data: { deletedAt: new Date() },
     });
-
-    // Invalidate mentor search cache
-    await RedisService.delByPattern("mentors:search:*");
 
     return result;
   } catch (error) {

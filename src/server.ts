@@ -3,7 +3,6 @@ import app from './app';
 import { envVars } from './app/config/env';
 import { seedSuperAdmin } from './app/utils/seedSuperAdmin';
 import CronManager from './app/cron/cronManager';
-import RedisService from './app/utils/redis';
 
 let server: Server;
 
@@ -26,7 +25,6 @@ const startServer = async () => {
         // Function to gracefully shut down the server
         const exitHandler = () => {
             CronManager.stop();
-            RedisService.disconnect();
             if (server) {
                 server.close(() => {
                     console.log('Server closed gracefully.');

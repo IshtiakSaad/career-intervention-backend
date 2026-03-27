@@ -3,21 +3,9 @@ import { paginationHelper } from "../../helpers/paginationHelper";
 import { IPaginationOptions } from "../../interfaces/pagination";
 import { mentorSearchableFields } from "./mentor.constant";
 import prisma from "../../utils/prisma";
-import RedisService from "../../utils/redis";
-
 const getAllMentors = async (filters: any, options: IPaginationOptions) => {
   const { searchTerm, specialties, ...filterData } = filters;
   const { limit, page, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
-
-  // 1. Generate Cache Key
-  const cacheKey = `mentors:search:${JSON.stringify(filters)}:${JSON.stringify(options)}`;
-
-  // 2. Try Cache
-  const cachedData = await RedisService.get<any>(cacheKey);
-  if (cachedData) {
-    console.log("⚡ Cache Hit: Mentors Search");
-    return cachedData;
-  }
 
   const andConditions: Prisma.MentorProfileWhereInput[] = [];
 
@@ -112,9 +100,6 @@ const getAllMentors = async (filters: any, options: IPaginationOptions) => {
     data: result
   };
 
-  // 4. Set Cache (TTL: 10 minutes)
-  await RedisService.set(cacheKey, response, 600);
-
   return response;
 };
 
@@ -151,9 +136,6 @@ const verifyMentor = async (id: string, isVerified: boolean) => {
     where: { id },
     data: { verificationBadge: isVerified },
   });
-
-  // Invalidate search cache
-  await RedisService.delByPattern("mentors:search:*");
 
   return result;
 };
