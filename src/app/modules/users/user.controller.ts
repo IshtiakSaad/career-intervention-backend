@@ -3,12 +3,21 @@ import { UserService } from "./user.service";
 import catchAsync from "../../middlewares/catchAsync";
 import { IUserCreateByAdminPayload, IUserRegisterPayload, IUserUpdatePayload } from "./user.interface";
 import { CloudinaryHelper } from "../../helpers/cloudinary";
+import pick from "../../utils/pick";
+import { paginationFields } from "../../constants/pagination";
+import { userFilterableFields } from "./user.constant";
+import sendResponse from "../../utils/sendResponse";
+import httpStatus from "http-status";
+
+
 
 
 /**
- * Self-registration endpoint for mentees.
- * Role is enforced as MENTEE
- */
+------------------------Self-registration endpoint for mentees. ------------------------
+---------------------------- Role is enforced as MENTEE --------------------------------
+*/
+
+
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const payload: IUserRegisterPayload = req.body;
 
@@ -32,9 +41,15 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-/**
- * Admin creates a user (MENTOR or ADMIN)
- */
+
+
+
+// --------------- Admin creates a user (MENTOR or ADMIN) ----------------------------//
+
+
+
+
+
 const createUserByAdmin = catchAsync(async (req: Request, res: Response) => {
   const payload: IUserCreateByAdminPayload = req.body;
 
@@ -57,13 +72,14 @@ const createUserByAdmin = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-import pick from "../../utils/pick";
-import { paginationFields } from "../../constants/pagination";
-import { userFilterableFields } from "./user.constant";
-import sendResponse from "../../utils/sendResponse";
-import httpStatus from "http-status";
+
+
 
 // ------------------ GET ALL USERS --------------------- //
+
+
+
+
 
 const getAllUsers = catchAsync(async (req: Request, res: Response) => {
   const filters = pick(req.query, userFilterableFields);
@@ -90,7 +106,14 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 
 
 
+
+
+
 // ------------------ GET A SINGLE USER --------------------- //
+
+
+
+
 
 const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -113,6 +136,11 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+
+// ------------------ UPDATE A SINGLE USER --------------------- //
+
+
+
 const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const payload: IUserUpdatePayload = req.body;
@@ -126,6 +154,10 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
     data: userResponse,
   });
 });
+
+
+
+
 
 
 const deleteUser = catchAsync(async (req: Request, res: Response) => {

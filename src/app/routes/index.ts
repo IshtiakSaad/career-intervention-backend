@@ -20,6 +20,7 @@ const router = express.Router();
 
 
 // Mount module routes
+
 router.use("/users", UserRoutes);                           // /api/v1/users
 router.use("/auth", AuthRoutes);                            // /api/v1/auth
 router.use("/mentors", MentorRoutes);                       // /api/v1/mentors

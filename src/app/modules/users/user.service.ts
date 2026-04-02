@@ -2,6 +2,13 @@ import { User as PrismaUser, Role as PrismaRole } from '../../../generated/prism
 import { hashPassword } from '../../utils/hashPassword';
 import prisma from '../../utils/prisma';
 import { IUserCreateByAdminPayload, IUserUpdatePayload } from './user.interface';
+import { paginationHelper } from '../../helpers/paginationHelper';
+import { IGenericResponse } from '../../interfaces/common';
+import { IPaginationOptions } from '../../interfaces/pagination';
+import { Prisma } from '../../../generated/prisma';
+import { userSearchableFields } from './user.constant';
+
+
 
 
 /**
@@ -82,12 +89,6 @@ const createUser = async (
 };
 
 
-import { paginationHelper } from '../../helpers/paginationHelper';
-import { IGenericResponse } from '../../interfaces/common';
-import { IPaginationOptions } from '../../interfaces/pagination';
-
-import { Prisma } from '../../../generated/prisma';
-import { userSearchableFields } from './user.constant';
 
 /**
  * Get all users with pagination, sorting, searching, and filtering

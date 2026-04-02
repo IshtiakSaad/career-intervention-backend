@@ -51,4 +51,4 @@ export interface IUserResponse {
   roles: string[];
   createdAt: Date;
   updatedAt: Date;
-}
+}

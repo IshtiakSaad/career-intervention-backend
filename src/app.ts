@@ -2,8 +2,6 @@ import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { envVars } from "./app/config/env";
-
-
 import routes from "./app/routes";
 import { globalErrorHandlers } from "./app/middlewares/globalErrorHandler";
 import { notFound } from "./app/middlewares/notFound";
