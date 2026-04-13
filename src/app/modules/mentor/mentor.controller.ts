@@ -11,6 +11,7 @@ const getAllMentors = catchAsync(async (req: Request, res: Response) => {
   const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
 
   const result = await MentorService.getAllMentors(filters, options);
+  
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -42,8 +43,31 @@ const verifyMentor = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateMentor = catchAsync(async (req: Request, res: Response) => {
+  const result = await MentorService.updateMentor(req.params.id as string, req.body);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Mentor updated successfully!",
+    data: result,
+  });
+});
+
+const deleteMentor = catchAsync(async (req: Request, res: Response) => {
+  const result = await MentorService.deleteMentor(req.params.id as string);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Mentor deleted successfully!",
+    data: result,
+  });
+});
+
 export const MentorController = {
   getAllMentors,
   getSingleMentor,
   verifyMentor,
+  updateMentor,
+  deleteMentor,
 };
+

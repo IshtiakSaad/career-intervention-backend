@@ -14,9 +14,8 @@ router.post(
   authRateLimiter,
   FileUploadMiddleware.single("file"),
   validateRequest(UserValidation.createUserValidationSchema),
-  UserController.registerUser
+  UserController.registerUser,
 );
-
 
 // Admin creates new user (MENTOR or ADMIN)
 router.post(
@@ -24,9 +23,8 @@ router.post(
   authMiddleware("ADMIN"), // only admin can create users with custom roles
   FileUploadMiddleware.single("file"),
   validateRequest(UserValidation.createUserByAdminValidationSchema),
-  UserController.createUserByAdmin
+  UserController.createUserByAdmin,
 );
-
 
 // Fetch all users (admin only)
 router.get("/", authMiddleware("ADMIN"), UserController.getAllUsers);
@@ -35,7 +33,7 @@ router.get("/", authMiddleware("ADMIN"), UserController.getAllUsers);
 router.get(
   "/:id",
   authMiddleware("ADMIN", "MENTEE", "MENTOR"),
-  UserController.getSingleUser
+  UserController.getSingleUser,
 );
 
 // Update user (admin or self)
@@ -43,9 +41,8 @@ router.patch(
   "/:id",
   authMiddleware("ADMIN", "MENTEE", "MENTOR"),
   validateRequest(UserValidation.updateUserValidationSchema),
-  UserController.updateUser
+  UserController.updateUser,
 );
-
 
 // Soft delete user (admin only)
 router.delete("/:id", authMiddleware("ADMIN"), UserController.deleteUser);

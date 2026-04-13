@@ -97,7 +97,7 @@ let envVars: EnvConfig;
 try {
   envVars = loadEnvVariables();
 } catch (err) {
-  console.error("Error loading environment variables:", err);
+//   console.error("Error loading environment variables:", err);
   process.exit(1);
 }
 

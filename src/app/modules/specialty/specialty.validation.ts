@@ -7,6 +7,15 @@ const createSpecialtyValidationSchema = z.object({
   }),
 });
 
+const updateSpecialtyValidationSchema = z.object({
+  body: z.object({
+    name: z.string().optional(),
+    icon: z.string().optional(),
+  }),
+});
+
 export const SpecialtyValidation = {
   createSpecialtyValidationSchema,
+  updateSpecialtyValidationSchema
 };
+

@@ -4,13 +4,22 @@ import sendResponse from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { AdminService } from "./admin.service";
 
+import pick from "../../utils/pick";
+
+const adminFilterableFields = ['searchTerm', 'activeStatus'];
+
 const getAllAdmins = catchAsync(async (req: Request, res: Response) => {
-  const result = await AdminService.getAllAdmins();
+  const filters = pick(req.query, adminFilterableFields);
+  const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
+
+  const result = await AdminService.getAllAdmins(filters, options);
+  
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Admins fetched successfully!",
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 

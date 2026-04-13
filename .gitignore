@@ -82,3 +82,5 @@ pm2.log
 *.pem
 *.key
 *.cert
+
+case_study.md

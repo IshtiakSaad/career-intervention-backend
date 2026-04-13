@@ -2,10 +2,10 @@ import { z } from "zod";
 
 const createServiceOfferingValidationSchema = z.object({
   body: z.object({
-    title: z.string({ required_error: "Title is required" }),
+    title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
-    durationMinutes: z.number({ required_error: "Duration is required" }).positive(),
-    price: z.number({ required_error: "Price is required" }).nonnegative(),
+    durationMinutes: z.number().positive("Duration is required"),
+    price: z.number().nonnegative("Price is required"),
     currency: z.string().optional(),
     serviceDescription: z.string().optional(),
   }),

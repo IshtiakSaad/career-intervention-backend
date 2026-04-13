@@ -13,12 +13,23 @@ export const authMiddleware = (...roles: string[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // 1. Get token from header
-      const token = req.headers.authorization;
+      let token = req.headers.authorization;
 
       if (!token) {
         return res
           .status(httpStatus.UNAUTHORIZED)
           .json({ success: false, message: "You are not authorized" });
+      }
+
+      // Handle industry-standard Bearer prefix
+      if (token.startsWith("Bearer ")) {
+        token = token.split(" ")[1];
+      }
+
+      if (!token) {
+        return res
+          .status(httpStatus.UNAUTHORIZED)
+          .json({ success: false, message: "Invalid Authorization header format" });
       }
 
       // 2. Verify token

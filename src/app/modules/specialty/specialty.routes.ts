@@ -21,4 +21,11 @@ router.delete(
   SpecialtyController.deleteSpecialty
 );
 
+router.patch(
+  '/:id',
+  authMiddleware('ADMIN'),
+  validateRequest(SpecialtyValidation.updateSpecialtyValidationSchema),
+  SpecialtyController.updateSpecialty
+);
+
 export const SpecialtyRoutes = router;

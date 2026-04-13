@@ -6,6 +6,9 @@ import { IMentorApplicationSubmitPayload, IMentorApplicationResubmitPayload, IDo
 import AuditService from "../audit/audit.service";
 import NotificationService from "../notification/notification.service";
 
+
+
+
 /**
  * Submit a new application to become a Mentor.
  * Only users who are not already Mentors (or active applicants) can submit.
@@ -75,6 +78,11 @@ const submitApplication = async (
     return application;
   });
 };
+
+
+
+
+
 
 /**
  * Admin Review: Approve, Reject, or Send Back for Changes (ACTION_NEEDED).
@@ -198,6 +206,10 @@ const reviewApplication = async (
   });
 };
 
+
+
+
+
 /**
  * Resubmit Application (Mentee): Update the application when status is ACTION_NEEDED.
  */
@@ -251,6 +263,12 @@ const resubmitApplication = async (
   });
 };
 
+
+
+
+
+
+
 /**
  * Get all applications (Admin Queue)
  */
@@ -265,6 +283,11 @@ const getAllApplications = async (filters: any) => {
     });
 };
 
+
+
+
+
+
 /**
  * Get single user's applications
  */
@@ -275,6 +298,10 @@ const getMyApplications = async (userId: string) => {
         orderBy: { createdAt: 'desc' }
     });
 };
+
+
+
+
 
 /**
  * Get single application details

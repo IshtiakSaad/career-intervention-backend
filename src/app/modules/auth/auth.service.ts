@@ -105,6 +105,9 @@ const loginUser = async (
   };
 };
 
+
+
+
 /**
  * Token Rotation Handler
  */
@@ -144,6 +147,10 @@ const refreshToken = async (
     refreshToken: `${session.id}:${rawToken}`
   };
 };
+
+
+
+
 
 /**
  * Change Password (Authenticated)
@@ -187,6 +194,10 @@ const changePassword = async (
   });
 };
 
+
+
+
+
 /**
  * Forgot Password (Public)
  */
@@ -223,7 +234,7 @@ const forgotPassword = async (
 
   await sendEmail({
     to: email,
-    subject: "Reset your password - Career Platform",
+    subject: "Reset your password - SocratesHQ",
     html: `
       <div>
         <h2>Password Reset Request</h2>
@@ -236,8 +247,11 @@ const forgotPassword = async (
     `
   });
 
-  console.log(`[SEC_AUDIT] Password reset token for ${email}: ${rawToken}`);
 };
+
+
+
+
 
 /**
  * Reset Password (Public)
@@ -290,11 +304,61 @@ const resetPassword = async (
   });
 };
 
+
+/**
+ * Logout User (Stateful)
+ */
+const logout = async (
+  tokenPayload: string,
+  context: { ip: string; ua: string }
+) => {
+  if (!tokenPayload) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Missing refresh token.");
+  }
+
+  const [sessionId, rawSecret] = tokenPayload.split(":");
+  if (!sessionId || !rawSecret) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Invalid token format.");
+  }
+
+  const session = await prisma.authSession.findFirst({
+    where: { id: sessionId, revokedAt: null }
+  });
+
+  if (!session) {
+    // Already revoked or invalid session
+    return;
+  }
+
+  // Revoke session
+  await prisma.authSession.update({
+    where: { id: sessionId },
+    data: { 
+        revokedAt: new Date(), 
+        revocationReason: RevocationReason.LOGOUT 
+    }
+  });
+
+  await AuditService.log({
+    actorId: session.userId,
+    sessionId: session.id,
+    eventType: AuditEventType.AUTH_EVENT,
+    action: AuditAction.LOGOUT,
+    entityType: "AuthSession",
+    entityId: session.id,
+    ipAddress: context.ip,
+    userAgent: context.ua,
+    reason: "User logged out"
+  });
+};
+
+
 export const AuthService = {
   loginUser,
   refreshToken,
   changePassword,
   forgotPassword,
   resetPassword,
+  logout
 };
 

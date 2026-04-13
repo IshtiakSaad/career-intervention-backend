@@ -4,12 +4,13 @@ import { AuthService } from "./auth.service";
 import sendResponse from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { envVars } from "../../config/env";
+import { AppError } from "../../errorHelpers/app-error";
 
 const COOKIE_NAME = "refreshToken";
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const context = {
-    ip: req.ip!,
+    ip: req.ip || "unknown",
     ua: req.headers["user-agent"] || "unknown",
   };
 
@@ -20,7 +21,8 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   res.cookie(COOKIE_NAME, refreshToken, {
     secure: envVars.NODE_ENV === "production",
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/api/v1/auth/refresh",
   });
 
@@ -37,6 +39,10 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
 
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
   const token = req.cookies[COOKIE_NAME];
+  if (!token) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Missing refresh token");
+  }
+
   const context = {
     ip: req.ip!,
     ua: req.headers["user-agent"] || "unknown",
@@ -48,7 +54,8 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
   res.cookie(COOKIE_NAME, newRefreshToken, {
     secure: envVars.NODE_ENV === "production",
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/api/v1/auth/refresh",
   });
 
@@ -62,6 +69,11 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 
 const changePassword = catchAsync(async (req: Request, res: Response) => {
   const user = (req as any).user;
+
+  if (!user?.id) {
+    throw new AppError(httpStatus.UNAUTHORIZED, "Unauthorized");
+  }
+
   const context = {
     ip: req.ip!,
     ua: req.headers["user-agent"] || "unknown",
@@ -110,21 +122,25 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const logout = catchAsync(async (req: Request, res: Response) => {
-    // Clear cookie
-    res.clearCookie(COOKIE_NAME, {
-        path: "/api/v1/auth/refresh",
-        httpOnly: true,
-        secure: envVars.NODE_ENV === "production",
-        sameSite: "strict"
-    });
 
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Logged out successfully!",
-        data: null
-    });
+const logout = catchAsync(async (req: Request, res: Response) => {
+  const token = req.cookies[COOKIE_NAME]; // or Authorization header
+  if (token) await AuthService.logout(token, { ip: req.ip!, ua: req.headers["user-agent"] || "unknown" });
+
+  // Clear cookie
+  res.clearCookie(COOKIE_NAME, {
+    path: "/api/v1/auth/refresh",
+    httpOnly: true,
+    secure: envVars.NODE_ENV === "production",
+    sameSite: "strict"
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Logged out successfully!",
+    data: null,
+  });
 });
 
 export const AuthController = {
@@ -133,6 +149,5 @@ export const AuthController = {
   changePassword,
   forgotPassword,
   resetPassword,
-  logout
+  logout,
 };
-

@@ -3,6 +3,8 @@ import { paginationHelper } from "../../helpers/paginationHelper";
 import { IPaginationOptions } from "../../interfaces/pagination";
 import { mentorSearchableFields } from "./mentor.constant";
 import prisma from "../../utils/prisma";
+
+
 const getAllMentors = async (filters: any, options: IPaginationOptions) => {
   const { searchTerm, specialties, ...filterData } = filters;
   const { limit, page, skip, sortBy, sortOrder } = paginationHelper.calculatePagination(options);
@@ -47,11 +49,17 @@ const getAllMentors = async (filters: any, options: IPaginationOptions) => {
 
   if (Object.keys(filterData).length > 0) {
     andConditions.push({
-      AND: Object.keys(filterData).map(key => ({
-        [key]: {
-          equals: (filterData as any)[key]
-        }
-      }))
+      AND: Object.keys(filterData).map(key => {
+        let val = (filterData as any)[key];
+        if (val === 'true') val = true;
+        if (val === 'false') val = false;
+        
+        return {
+          [key]: {
+            equals: val
+          }
+        };
+      })
     });
   }
 
@@ -140,9 +148,39 @@ const verifyMentor = async (id: string, isVerified: boolean) => {
   return result;
 };
 
+const updateMentor = async (id: string, payload: any) => {
+  const result = await prisma.mentorProfile.update({
+    where: { id },
+    data: payload,
+  });
+
+  return result;
+};
+
+const deleteMentor = async (id: string) => {
+  // We perform a soft delete on the User record associated with this MentorProfile
+  const mentorProfile = await prisma.mentorProfile.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
+
+  if (!mentorProfile) {
+    throw new Error("Mentor not found");
+  }
+
+  const result = await prisma.user.update({
+    where: { id: mentorProfile.userId },
+    data: { deletedAt: new Date() },
+  });
+
+  return result;
+};
 
 export const MentorService = {
   getAllMentors,
   getSingleMentor,
   verifyMentor,
+  updateMentor,
+  deleteMentor,
 };
+
