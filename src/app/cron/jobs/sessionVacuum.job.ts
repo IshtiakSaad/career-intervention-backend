@@ -45,7 +45,7 @@ export const sessionVacuum = async (): Promise<void> => {
           await tx.session.update({
             where: { id: session.id },
             data: {
-              status: SessionStatus.CANCELLED,
+              status: SessionStatus.EXPIRED,
               deletedAt: new Date(),
             },
           });
@@ -81,7 +81,7 @@ export const sessionVacuum = async (): Promise<void> => {
               entityType: "Session",
               entityId: session.id,
               stateBefore: { status: SessionStatus.PENDING },
-              stateAfter: { status: SessionStatus.CANCELLED },
+              stateAfter: { status: SessionStatus.EXPIRED },
               reason: `Auto-cancelled: payment timeout (${timeoutMinutes}m)`,
             },
             tx

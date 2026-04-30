@@ -16,6 +16,12 @@ model MentorProfile {
 
     activeStatus Boolean @default(true)
     description  String?
+    
+    // Professional Metadata
+    headline      String?
+    location      String?
+    linkedinUrl   String?
+    portfolioUrl  String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

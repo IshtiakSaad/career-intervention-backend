@@ -1,0 +1,20 @@
+model SessionActivity {
+    id String @id @default(uuid())
+
+    sessionId String
+    session   Session @relation(fields: [sessionId], references: [id])
+
+    // Who performed the action
+    actorId String
+    actor   User   @relation(fields: [actorId], references: [id])
+
+    // Event tracking
+    eventType SessionActivityType
+    metadata  Json?   // e.g., { durationMinutes: 15 }
+
+    // DB-authoritative timestamp (never trust client clock)
+    occurredAt DateTime @default(now())
+
+    @@index([sessionId, eventType])
+    @@map("session_activities")
+}

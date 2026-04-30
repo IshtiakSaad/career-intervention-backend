@@ -28,6 +28,11 @@ const createUser = async (
         experience, 
         designation, 
         currentWorkingPlace,
+        specialties,
+        headline,
+        location,
+        linkedinUrl,
+        portfolioUrl,
         password, 
         role,
         ...userData 
@@ -60,15 +65,29 @@ const createUser = async (
           },
         });
       } else if (payload.role === PrismaRole.MENTOR) {
-        await tx.mentorProfile.create({
+        const mentor = await tx.mentorProfile.create({
           data: {
             email: newUser.email,
             bio: bio || null,
             experience: experience || 0,
             designation: designation || null,
             currentWorkingPlace: currentWorkingPlace || null,
+            headline: headline || null,
+            location: location || null,
+            linkedinUrl: linkedinUrl || null,
+            portfolioUrl: portfolioUrl || null,
           },
         });
+
+        // 3. Link specialties if provided
+        if (specialties && specialties.length > 0) {
+          await tx.mentorSpecialty.createMany({
+            data: specialties.map((specialtyId: string) => ({
+              mentorId: mentor.id,
+              specialtyId,
+            })),
+          });
+        }
       } else if (payload.role === PrismaRole.ADMIN) {
         await tx.admin.create({
           data: {

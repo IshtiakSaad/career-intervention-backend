@@ -43,7 +43,8 @@ model User {
     disputesFiled    Dispute[] @relation("DisputeFiler")
     disputesResolved Dispute[] @relation("DisputeResolver")
 
-    notifications    Notification[]
+    notifications      Notification[]
+    sessionActivities  SessionActivity[]
 
     @@map("users")
 }

@@ -1,15 +1,19 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../middlewares/catchAsync';
 import { SessionService } from './session.service';
+import { ActionPlanService } from './actionPlan.service';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
 import { AppError } from '../../errorHelpers/app-error';
 import prisma from '../../utils/prisma';
 
+// ═══════════════════════════════════════════════════════════════
+// SESSION CONTROLLERS
+// ═══════════════════════════════════════════════════════════════
+
 const bookSession = catchAsync(async (req: Request, res: Response) => {
   const user = (req as any).user;
   
-  // Find menteeProfile
   const menteeProfile = await prisma.menteeProfile.findUnique({
     where: { email: user.email }
   });
@@ -63,9 +67,82 @@ const deleteSession = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════════════
+// ACTION PLAN CONTROLLERS
+// ═══════════════════════════════════════════════════════════════
+
+const createActionPlan = catchAsync(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { sessionId, ...payload } = req.body;
+
+  const result = await ActionPlanService.createActionPlan(sessionId, user.id, payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Action plan created successfully",
+    data: result
+  });
+});
+
+const updateActionPlan = catchAsync(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { version, ...payload } = req.body;
+
+  const result = await ActionPlanService.updateActionPlan(req.params.id as string, user.id, payload, version);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Action plan updated successfully",
+    data: result
+  });
+});
+
+const submitActionPlan = catchAsync(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  const result = await ActionPlanService.submitActionPlan(req.params.id as string, user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Action plan submitted successfully",
+    data: result
+  });
+});
+
+const getMyActionPlans = catchAsync(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const result = await ActionPlanService.getMyActionPlans(user.id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Action plans fetched successfully",
+    data: result
+  });
+});
+
+const getActionPlanBySession = catchAsync(async (req: Request, res: Response) => {
+  const result = await ActionPlanService.getActionPlanBySessionId(req.params.sessionId as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Action plan fetched successfully",
+    data: result
+  });
+});
+
 export const SessionController = {
   bookSession,
   getMySessions,
   updateSession,
-  deleteSession
+  deleteSession,
+  createActionPlan,
+  updateActionPlan,
+  submitActionPlan,
+  getMyActionPlans,
+  getActionPlanBySession,
 };

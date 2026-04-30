@@ -28,6 +28,12 @@ const createAvailabilitySlot = catchAsync(async (req: Request, res: Response) =>
 
 const bulkCreateAvailabilitySlots = catchAsync(async (req: Request, res: Response) => {
   const user = (req as any).user;
+  const idempotencyKey = req.headers['x-idempotency-key'] as string;
+
+  if (!idempotencyKey) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Missing x-idempotency-key header");
+  }
+
   const mentorProfile = await prisma.mentorProfile.findUnique({
     where: { email: user.email }
   });
@@ -36,12 +42,16 @@ const bulkCreateAvailabilitySlots = catchAsync(async (req: Request, res: Respons
     throw new AppError(httpStatus.FORBIDDEN, "Only mentors can manage availability");
   }
 
-  const result = await AvailabilitySlotService.bulkCreateAvailabilitySlots(mentorProfile.id, req.body);
+  const result = await AvailabilitySlotService.bulkCreateAvailabilitySlots(
+    mentorProfile.id, 
+    req.body,
+    idempotencyKey
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: "Bulk availability slots created successfully",
+    message: "Bulk availability slots request processed",
     data: result
   });
 });

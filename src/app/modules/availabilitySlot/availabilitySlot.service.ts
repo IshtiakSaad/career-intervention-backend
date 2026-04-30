@@ -63,66 +63,144 @@ const createAvailabilitySlot = async (
   return result;
 };
 
+import { fromZonedTime } from "date-fns-tz";
+
 const bulkCreateAvailabilitySlots = async (
   mentorId: string,
-  payload: IAvailabilitySlotBulkCreatePayload
+  payload: IAvailabilitySlotBulkCreatePayload,
+  idempotencyKey: string
 ) => {
-  const { startDate, endDate, startTime, endTime, slotDuration } = payload;
+  const { serviceId, startDate, endDate, weekdays, dailyStartTime, dailyEndTime, timezone } = payload;
 
-  // Security Check: Is the mentor still authorized?
+  // Security Check & Duration Extraction
   const mentor = await prisma.mentorProfile.findUnique({
     where: { id: mentorId },
-    include: { 
-      user: { 
-        include: { 
-          userRoles: { 
-            where: { role: 'MENTOR', revokedAt: null } 
-          } 
-        } 
-      } 
+    include: {
+      serviceOfferings: { where: { id: serviceId } }
     }
   });
 
-  if (!mentor?.user || mentor.user.deletedAt || mentor.user.userRoles.length === 0) {
+  if (!mentor) {
     throw new AppError(httpStatus.FORBIDDEN, "You are no longer authorized to create slots");
   }
-  
-  const slots = [];
 
-  const currentDay = new Date(startDate);
-  const lastDay = new Date(endDate);
-
-  while (currentDay <= lastDay) {
-    const [startHour, startMin] = startTime.split(':').map(Number);
-    const [endHour, endMin] = endTime.split(':').map(Number);
-
-    let slotStart = new Date(currentDay);
-    slotStart.setHours(startHour, startMin, 0, 0);
-
-    const dayEnd = new Date(currentDay);
-    dayEnd.setHours(endHour, endMin, 0, 0);
-
-    while (slotStart < dayEnd) {
-      let slotEnd = new Date(slotStart);
-      slotEnd.setMinutes(slotStart.getMinutes() + slotDuration);
-
-      if (slotEnd <= dayEnd) {
-        slots.push({
-          mentorId,
-          startTime: new Date(slotStart),
-          endTime: new Date(slotEnd),
-          status: SlotStatus.AVAILABLE
-        });
-      }
-      slotStart = new Date(slotEnd);
-    }
-    currentDay.setDate(currentDay.getDate() + 1);
+  const service = mentor.serviceOfferings[0];
+  if (!service) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Invalid or unauthorized service offering selected");
   }
 
-  // Use createMany for bulk insertion (Prisma transaction recommended if partial failure is an issue)
-  const result = await prisma.availabilitySlot.createMany({
-    data: slots,
-    skipDuplicates: true
+  const serviceDurationMinutes = service.durationMinutes;
+  const bufferMinutes = service.bufferMinutes || 0;
+
+  // 1. Idempotency Check
+  const existingIdempotency = await prisma.idempotencyKey.findUnique({
+    where: { key: idempotencyKey }
+  });
+
+  if (existingIdempotency) {
+    return existingIdempotency.response; // Return cached response
+  }
+
+  // 2. Slot Generation Logic
+  const slots: { startTime: Date; endTime: Date; bufferEndTime: Date }[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  const [startHour, startMin] = dailyStartTime.split(":").map(Number);
+  const [endHour, endMin] = dailyEndTime.split(":").map(Number);
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    if (!weekdays.includes(d.getDay())) continue;
+
+    let current = new Date(d);
+    current.setHours(startHour, startMin, 0, 0);
+
+    const dayEnd = new Date(d);
+    dayEnd.setHours(endHour, endMin, 0, 0);
+
+    while (current < dayEnd) {
+      const slotStartLocal = new Date(current);
+      const slotEndLocal = new Date(current.getTime() + serviceDurationMinutes * 60000);
+      const slotBufferEndLocal = new Date(slotEndLocal.getTime() + bufferMinutes * 60000);
+
+      // Session must fit inside working hours
+      if (slotEndLocal > dayEnd) break;
+
+      // Convert to UTC
+      const startUTC = fromZonedTime(slotStartLocal, timezone);
+      const endUTC = fromZonedTime(slotEndLocal, timezone);
+      const bufferEndUTC = fromZonedTime(slotBufferEndLocal, timezone);
+
+      // Reject past slots
+      if (startUTC <= new Date()) {
+        current = slotBufferEndLocal;
+        continue;
+      }
+
+      slots.push({ startTime: startUTC, endTime: endUTC, bufferEndTime: bufferEndUTC });
+      
+      // Advance to after the buffer concludes
+      current = slotBufferEndLocal;
+    }
+  }
+
+  // HARD LIMIT
+  if (slots.length > 500) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Slot generation limit exceeded (max 500)");
+  }
+
+  // 3. Database Insertion (Atomic Loop with Deduplication)
+  const result = await prisma.$transaction(async (tx) => {
+    let created = 0;
+    let skipped = 0;
+
+    for (const slot of slots) {
+      try {
+        const hasOverlap = await tx.availabilitySlot.findFirst({
+          where: {
+            mentorId,
+            startTime: { lt: slot.bufferEndTime },
+            OR: [
+              { bufferEndTime: { gt: slot.startTime } },
+              { bufferEndTime: null, endTime: { gt: slot.startTime } }
+            ]
+          }
+        });
+
+        if (hasOverlap) {
+          skipped++;
+          continue;
+        }
+
+        await tx.availabilitySlot.create({
+          data: {
+            mentorId,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            bufferEndTime: slot.bufferEndTime,
+            status: SlotStatus.AVAILABLE,
+            batchId: idempotencyKey
+          }
+        });
+        created++;
+      } catch (e) {
+        // Fallback for strict database constraints
+        skipped++; 
+      }
+    }
+
+    return { created, skipped, totalAttempted: slots.length };
+  }, {
+    timeout: 10000 // give transaction time for bulk iterations
+  });
+
+  // 4. Trace Idempotency
+  await prisma.idempotencyKey.create({
+    data: {
+      key: idempotencyKey,
+      userId: mentorId,
+      response: result
+    }
   });
 
   return result;

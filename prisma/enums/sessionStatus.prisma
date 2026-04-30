@@ -3,6 +3,12 @@ enum SessionStatus {
     CONFIRMED
     ONGOING
     COMPLETED
-    CANCELLED
+    SETTLED             // Dispute window closed, funds released
+    CANCELLED_BY_MENTEE
+    CANCELLED_BY_MENTOR
+    EXPIRED             // Mentor didn't respond within SLA
+    NO_SHOW
+    DISPUTED
+    REFUNDED
     REJECTED
 }

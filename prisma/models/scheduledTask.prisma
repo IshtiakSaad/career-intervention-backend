@@ -1,0 +1,34 @@
+model ScheduledTask {
+    id String @id @default(uuid())
+
+    // Task definition
+    taskType  String   // e.g., "EXPIRE_PENDING_SESSION", "SETTLE_SESSION", "SEND_REMINDER"
+    payload   Json     // { sessionId: string, ... }
+
+    // Scheduling
+    runAt     DateTime
+    nextRunAt DateTime?
+
+    // Distributed lock (prevents duplicate execution across instances)
+    lockedAt  DateTime?
+    lockedBy  String?   // Server instance identifier
+
+    // Resilience
+    attempts    Int @default(0)
+    maxAttempts Int @default(3)
+    lastError   String?
+
+    // State
+    completedAt DateTime?
+    failedAt    DateTime?
+
+    // Idempotency (one task per session per type)
+    entityId String
+    @@unique([taskType, entityId])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([runAt, lockedAt, completedAt])
+    @@map("scheduled_tasks")
+}

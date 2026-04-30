@@ -28,11 +28,21 @@ const createServiceOffering = async (
 };
 
 const getAllServiceOfferings = async (filters: any) => {
-  const { mentorId, ...filterData } = filters;
+  const { mentorId, userId, ...filterData } = filters;
   const whereConditions: any = { deletedAt: null };
 
   if (mentorId) {
     whereConditions.mentorId = mentorId;
+  } else if (userId) {
+    const mentorProfile = await prisma.mentorProfile.findFirst({
+      where: { user: { id: userId } }
+    });
+    if (mentorProfile) {
+      whereConditions.mentorId = mentorProfile.id;
+    } else {
+      // If userId is provided but no mentor profile found, we must return empty
+      return [];
+    }
   }
 
   const result = await prisma.serviceOffering.findMany({

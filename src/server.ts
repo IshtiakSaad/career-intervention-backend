@@ -3,6 +3,7 @@ import app from './app';
 import { envVars } from './app/config/env';
 import { seedSuperAdmin } from './app/utils/seedSuperAdmin';
 import CronManager from './app/cron/cronManager';
+import { JobRunner } from './app/utils/jobRunner';
 
 let server: Server;
 
@@ -13,6 +14,9 @@ const startServer = async () => {
 
         // Start scheduled jobs
         CronManager.start();
+
+        // Start the distributed job runner (session expiry, settlement, reminders)
+        JobRunner.start();
 
         // Start the server
 
@@ -25,6 +29,7 @@ const startServer = async () => {
         // Function to gracefully shut down the server
         const exitHandler = () => {
             CronManager.stop();
+            JobRunner.stop();
             if (server) {
                 server.close(() => {
                     console.log('Server closed gracefully.');

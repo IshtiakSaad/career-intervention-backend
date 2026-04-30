@@ -63,11 +63,65 @@ const deleteMentor = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const createMySlots = catchAsync(async (req: Request, res: Response) => {
+  const email = (req.user as any).email as string;
+  const result = await MentorService.createMySlots(email, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Availability slots created successfully!",
+    data: result,
+  });
+});
+
+const getMySlots = catchAsync(async (req: Request, res: Response) => {
+  const email = (req.user as any).email as string;
+  const result = await MentorService.getMySlots(email);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "My availability slots fetched successfully!",
+    data: result,
+  });
+});
+
+const deleteMySlot = catchAsync(async (req: Request, res: Response) => {
+  const email = (req.user as any).email as string;
+  const { id: slotId } = req.params;
+  const result = await MentorService.deleteMySlot(email, slotId as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Availability slot removed successfully!",
+    data: result,
+  });
+});
+
+const deleteMySlotsByDateRange = catchAsync(async (req: Request, res: Response) => {
+  const email = (req.user as any).email as string;
+  const { startIso, endIso } = req.body;
+  const result = await MentorService.deleteMySlotsByDateRange(email, startIso, endIso);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Batch complete: ${result.deletedCount} available slots cleared.`,
+    data: result,
+  });
+});
+
 export const MentorController = {
   getAllMentors,
   getSingleMentor,
   verifyMentor,
   updateMentor,
   deleteMentor,
+  createMySlots,
+  getMySlots,
+  deleteMySlot,
+  deleteMySlotsByDateRange,
 };
 

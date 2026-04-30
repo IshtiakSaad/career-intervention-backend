@@ -1,0 +1,6 @@
+enum SessionActivityType {
+    JOIN
+    LEAVE
+    NO_SHOW_REPORTED
+    NO_SHOW_CONTESTED
+}

@@ -1,0 +1,9 @@
+model IdempotencyKey {
+    id        String   @id @default(uuid())
+    key       String   @unique
+    userId    String
+    response  Json?
+    createdAt DateTime @default(now())
+
+    @@map("idempotency_keys")
+}

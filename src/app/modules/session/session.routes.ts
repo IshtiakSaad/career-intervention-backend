@@ -7,6 +7,10 @@ import { bookingRateLimiter } from '../../middlewares/rateLimiter';
 
 const router = express.Router();
 
+// ═══════════════════════════════════════════════════════════════
+// SESSION ROUTES
+// ═══════════════════════════════════════════════════════════════
+
 router.post(
   '/book',
   authMiddleware('MENTEE'),
@@ -32,6 +36,42 @@ router.delete(
   '/:id',
   authMiddleware('ADMIN'),
   SessionController.deleteSession
+);
+
+// ═══════════════════════════════════════════════════════════════
+// ACTION PLAN ROUTES
+// ═══════════════════════════════════════════════════════════════
+
+router.post(
+  '/action-plans',
+  authMiddleware('MENTOR'),
+  validateRequest(SessionValidation.createActionPlanValidationSchema),
+  SessionController.createActionPlan
+);
+
+router.get(
+  '/action-plans/mine',
+  authMiddleware('MENTOR', 'MENTEE'),
+  SessionController.getMyActionPlans
+);
+
+router.get(
+  '/action-plans/session/:sessionId',
+  authMiddleware('MENTOR', 'MENTEE', 'ADMIN'),
+  SessionController.getActionPlanBySession
+);
+
+router.patch(
+  '/action-plans/:id',
+  authMiddleware('MENTOR'),
+  validateRequest(SessionValidation.updateActionPlanValidationSchema),
+  SessionController.updateActionPlan
+);
+
+router.patch(
+  '/action-plans/:id/submit',
+  authMiddleware('MENTOR'),
+  SessionController.submitActionPlan
 );
 
 export const SessionRoutes = router;

@@ -4,18 +4,26 @@ model AvailabilitySlot {
     mentorId String
     mentor   MentorProfile @relation(fields: [mentorId], references: [id])
 
-    startTime DateTime
-    endTime   DateTime
+    startTime     DateTime
+    endTime       DateTime
+    bufferEndTime DateTime?
 
     status SlotStatus @default(AVAILABLE)
 
     description String?
+
+    // Optimistic Concurrency Control
+    version Int @default(1)
+
+    // Idempotency Tracking
+    batchId String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
     session Session?
 
-    @@unique([mentorId, startTime, endTime])
+    @@unique([mentorId, startTime])
+    @@index([mentorId, startTime])
     @@map("availability_slots")
 }

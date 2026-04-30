@@ -23,6 +23,11 @@ export interface IUserCreateByAdminPayload extends IUserRegisterPayload {
   experience?: number; // For Mentors
   designation?: string; // For Mentors
   currentWorkingPlace?: string; // For Mentors
+  specialties?: string[]; // IDs of specialties to link
+  headline?: string;
+  location?: string;
+  linkedinUrl?: string;
+  portfolioUrl?: string;
 }
 
 

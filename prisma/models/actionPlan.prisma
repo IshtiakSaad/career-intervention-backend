@@ -1,0 +1,21 @@
+model ActionPlan {
+    id String @id @default(uuid())
+
+    sessionId String  @unique
+    session   Session @relation(fields: [sessionId], references: [id])
+
+    // Structured content
+    summary   String
+    tasks     Json     // Array<{ title: string, deadline?: DateTime, isDone: boolean }>
+    resources Json?    // Array<{ label: string, url: string }>
+    notes     String?  // Free-form mentor notes
+
+    // Lifecycle
+    status    ActionPlanStatus @default(DRAFT)
+    version   Int              @default(1)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("action_plans")
+}
